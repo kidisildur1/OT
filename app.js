@@ -4,7 +4,8 @@
   const state = {
     mode: 'home',
     commonSlide: 0,
-    selectedEquipmentId: null
+    selectedEquipmentId: null,
+    equipmentSlide: 0
   };
 
   const app = document.getElementById('app');
@@ -348,6 +349,8 @@
   function renderEquipmentVideo(id) {
     const equipment = window.OMD_EQUIPMENT.find((item) => item.id === id);
     state.selectedEquipmentId = id;
+    state.equipmentSlide = 0;
+    const total = (equipment.slides?.length || 0) + 2;
 
     setBreadcrumb([
       { label: 'Главная', onClick: renderHome },
@@ -363,7 +366,7 @@
           <div class="page-head-title">${esc(equipment.name)}</div>
           <div class="page-head-sub">${esc(equipment.description)}</div>
         </div>
-        ${renderStepper({ current: 1, total: 3, label: 'Шаг 1 из 3 — видео по установке' })}
+        ${renderStepper({ current: 1, total, label: `Шаг 1 из ${total} — видео по установке` })}
         <div class="slide-block">
           <div class="slide-block-head">
             <div class="slide-block-num">▶</div>
@@ -373,7 +376,7 @@
             <div class="vp-icon">▶</div>
             <div class="vp-title">Видеоинструкция будет добавлена позже</div>
             <div class="vp-sub">Здесь будет ролик: назначение оборудования, опасные зоны, безопасный запуск, запреты и аварийные действия.</div>
-            <button class="vp-play-btn" id="equipmentCardsBtn" type="button">Перейти к карточкам</button>
+            <button class="vp-play-btn" id="equipmentCardsBtn" type="button">Перейти к инструктажу</button>
             <div class="vp-note">Поле videoSrc уже предусмотрено в данных.</div>
           </div>
         </div>
@@ -382,39 +385,51 @@
       <div class="sticky-bottom no-print">
         <div class="sticky-bottom-inner">
           <button class="btn btn-secondary" id="equipmentBack" type="button">← Установки</button>
-          <button class="btn btn-primary btn-grow" id="equipmentNext" type="button">К карточкам →</button>
+          <button class="btn btn-primary btn-grow" id="equipmentNext" type="button">К инструктажу →</button>
         </div>
       </div>
     `;
 
     document.getElementById('equipmentBack').addEventListener('click', renderEquipmentList);
-    document.getElementById('equipmentNext').addEventListener('click', () => renderEquipmentCards(id));
-    document.getElementById('equipmentCardsBtn').addEventListener('click', () => renderEquipmentCards(id));
+    document.getElementById('equipmentNext').addEventListener('click', () => renderEquipmentSlide(id, 0));
+    document.getElementById('equipmentCardsBtn').addEventListener('click', () => renderEquipmentSlide(id, 0));
     scrollTop();
   }
 
-  function renderEquipmentCards(id) {
+  function renderEquipmentSlide(id, index = 0) {
     const equipment = window.OMD_EQUIPMENT.find((item) => item.id === id);
-    const cards = equipment.hazards.map((hazard) => ({ icon: 'alert', title: hazard, sub: 'Опасная зона или фактор риска. Подробный текст будет добавлен на следующем этапе из ИОТ.', type: 'warn' }));
+    const slides = equipment.slides || [];
+    const slide = slides[index];
+    const total = slides.length + 2;
+    const stepNumber = index + 2;
+    state.equipmentSlide = index;
+
+    setBreadcrumb([
+      { label: 'Главная', onClick: renderHome },
+      { label: 'ЭИП ОМД', onClick: () => renderOmdCommon(0) },
+      { label: 'Установки', onClick: renderEquipmentList },
+      { label: equipment.name, onClick: () => renderEquipmentVideo(id) },
+      { label: `Раздел ${index + 1}` }
+    ]);
 
     app.innerHTML = `
       <div class="page">
         <div class="page-head">
           <div class="page-head-eyebrow">Инструктаж по установке</div>
-          <div class="page-head-title">Опасные зоны</div>
+          <div class="page-head-title">${esc(slide.title)}</div>
           <div class="page-head-sub">${esc(equipment.name)}</div>
         </div>
-        ${renderStepper({ current: 2, total: 3, label: 'Шаг 2 из 3 — карточки установки' })}
+        ${renderStepper({ current: stepNumber, total, label: `Шаг ${stepNumber} из ${total} — ${slide.title}` })}
         <div class="slide-block">
           <div class="slide-block-head">
-            <div class="slide-block-num">1</div>
-            <div class="slide-block-title">Ключевые опасности установки</div>
+            <div class="slide-block-num">${index + 1}</div>
+            <div class="slide-block-title">${esc(slide.title)}</div>
           </div>
-          <div class="slide-cards-grid">${cards.map(renderSafetyCard).join('')}</div>
+          <div class="slide-cards-grid">${slide.cards.map(renderSafetyCard).join('')}</div>
           <div class="slide-footer">
             <label class="confirm-row">
               <input type="checkbox" class="confirm-check" id="equipmentConfirm" />
-              <span class="confirm-label">Ознакомлен с особенностями установки</span>
+              <span class="confirm-label">Ознакомлен с разделом</span>
             </label>
           </div>
         </div>
@@ -422,17 +437,23 @@
       </div>
       <div class="sticky-bottom no-print">
         <div class="sticky-bottom-inner">
-          <button class="btn btn-secondary" id="cardsBack" type="button">← Видео</button>
-          <button class="btn btn-primary btn-grow" id="cardsDone" type="button" disabled>Завершить →</button>
+          <button class="btn btn-secondary" id="slideBack" type="button">← Назад</button>
+          <button class="btn btn-primary btn-grow" id="slideNext" type="button" disabled>${index < slides.length - 1 ? 'Следующий раздел →' : 'К завершению →'}</button>
         </div>
       </div>
     `;
 
     const confirm = document.getElementById('equipmentConfirm');
-    const done = document.getElementById('cardsDone');
-    confirm.addEventListener('change', () => { done.disabled = !confirm.checked; });
-    document.getElementById('cardsBack').addEventListener('click', () => renderEquipmentVideo(id));
-    done.addEventListener('click', renderDone);
+    const next = document.getElementById('slideNext');
+    confirm.addEventListener('change', () => { next.disabled = !confirm.checked; });
+    document.getElementById('slideBack').addEventListener('click', () => {
+      if (index > 0) renderEquipmentSlide(id, index - 1);
+      else renderEquipmentVideo(id);
+    });
+    next.addEventListener('click', () => {
+      if (index < slides.length - 1) renderEquipmentSlide(id, index + 1);
+      else renderDone();
+    });
     scrollTop();
   }
 
@@ -452,7 +473,7 @@
         <div class="receipt-card">
           <div class="receipt-row"><span class="receipt-key">Статус</span><span class="receipt-val">Пройдено</span></div>
           <div class="receipt-row"><span class="receipt-key">Формат</span><span class="receipt-val">Видео → карточки → подтверждение</span></div>
-          <div class="receipt-row"><span class="receipt-key">Следующий этап</span><span class="receipt-val">Расширить общий модуль ОМД до 12 экранов</span></div>
+          <div class="receipt-row"><span class="receipt-key">Следующий этап</span><span class="receipt-val">Добавить тестирование и журнал прохождения</span></div>
         </div>
         <div class="page-bottom-spacer"></div>
       </div>
