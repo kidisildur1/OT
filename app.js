@@ -1,138 +1,162 @@
-const routeSteps = [
+const screens = [
   {
-    title: "Общий инструктаж",
-    description: "Базовые требования безопасности для всех сотрудников.",
-    icon: "🛡️"
+    kicker: "Старт",
+    icon: "🛡️",
+    title: "Цифровой инструктаж по охране труда",
+    text: "Приложение будет вести сотрудника последовательно: от базовых правил безопасности до обучения по конкретной установке и фиксации результата.",
+    items: [
+      "Чистый mobile-first интерфейс",
+      "Один экран — один смысл",
+      "Короткие карточки вместо длинных инструкций",
+      "Задел под Telegram WebApp и GitHub Pages"
+    ],
+    notice: "Основа логики — уже опубликованный формат обучения для командированных: пользователь не видит всё сразу, а проходит маршрут по шагам."
   },
   {
-    title: "Выбор отдела",
-    description: "Переход к нужному направлению: лаборатория, участок или сектор.",
-    icon: "🏢"
+    kicker: "Шаг 1",
+    icon: "📘",
+    title: "Общий инструктаж для всех",
+    text: "Сначала сотрудник изучает базовые требования, которые действуют для всех направлений: допуск, СИЗ, порядок действий при аварии и ответственность.",
+    items: [
+      "Допуск к работе",
+      "Средства индивидуальной защиты",
+      "Пожар, травма, электробезопасность",
+      "Короткий тест по общим требованиям"
+    ]
   },
   {
-    title: "Выбор подразделения",
-    description: "Сектор, лаборатория или участок с собственным общим модулем.",
-    icon: "🧭"
+    kicker: "Шаг 2",
+    icon: "🏢",
+    title: "Выбор отдела и подразделения",
+    text: "После общего блока пользователь выбирает нужное направление: отдел, сектор, лабораторию или участок. У каждого подразделения будет свой общий модуль.",
+    items: [
+      "Отделы и лаборатории",
+      "Секторы и участки",
+      "Общие риски конкретного направления",
+      "Без дублирования одинаковых требований"
+    ]
   },
   {
-    title: "Общий модуль подразделения",
-    description: "Повторяющиеся правила и риски конкретного направления.",
-    icon: "📋"
-  },
-  {
+    kicker: "Шаг 3",
+    icon: "⚙️",
     title: "Выбор установки",
-    description: "Конкретное оборудование, на котором сотрудник будет работать.",
-    icon: "⚙️"
+    text: "Далее сотрудник выбирает конкретное оборудование, на котором ему предстоит работать. Для каждой установки будет отдельная карточка обучения.",
+    items: [
+      "Название установки",
+      "Подразделение и ответственный",
+      "Номер ИОТ при наличии",
+      "Основные опасности"
+    ]
   },
   {
-    title: "Видео и инструктаж",
-    description: "Видео по установке, опасные зоны, запреты и порядок работы.",
-    icon: "▶️"
+    kicker: "Шаг 4",
+    icon: "▶️",
+    title: "Видео по установке",
+    text: "Модуль конкретной установки начинается с вводного видео. Пока экран оставляем пустым, позже сюда будет добавлен ролик со сценарием безопасной работы.",
+    items: [
+      "Пока показываем placeholder",
+      "Позже подключаем mp4-файл",
+      "Видео адаптируется под телефон",
+      "Без autoplay со звуком"
+    ],
+    notice: "Видео нужно именно для установки: показать пульт, опасные зоны, рабочую сторону, порядок запуска и действия при нештатной ситуации."
   },
   {
-    title: "Тестирование",
-    description: "Проверка знаний и подтверждение допуска к работе.",
-    icon: "✅"
+    kicker: "Шаг 5",
+    icon: "⚠️",
+    title: "Инструктаж по установке",
+    text: "После видео идут короткие экраны по конкретному оборудованию: опасные зоны, проверка перед началом работы, безопасный порядок действий и запреты.",
+    items: [
+      "Опасные зоны",
+      "Перед началом работы",
+      "Безопасный порядок работы",
+      "Что запрещено и что делать при аварии"
+    ]
   },
   {
-    title: "Журнал прохождения",
-    description: "Фиксация результата, даты, установки и статуса сотрудника.",
-    icon: "📊"
+    kicker: "Финал",
+    icon: "✅",
+    title: "Тест и журнал прохождения",
+    text: "В конце сотрудник проходит тест. Результат фиксируется в журнале: дата, установка, процент прохождения и статус допуска.",
+    items: [
+      "Порог прохождения — 80%",
+      "Результат: допущен / не допущен",
+      "Сохранение в localStorage на первом этапе",
+      "Дальше — подключение Google Sheets"
+    ],
+    notice: "Следующий этап разработки — добавить подробный общий инструктаж участка ЭИП ОМД на 12 экранов."
   }
 ];
 
-const appModules = [
-  {
-    title: "Для всех сотрудников",
-    description: "Единый стартовый модуль: допуск, СИЗ, пожар, травма, электробезопасность.",
-    icon: "👥"
-  },
-  {
-    title: "Подразделения",
-    description: "Отделы, сектора, лаборатории и участки с отдельными правилами.",
-    icon: "🏭"
-  },
-  {
-    title: "Оборудование",
-    description: "Каталог установок с карточками, ответственными и типами опасностей.",
-    icon: "🛠️"
-  },
-  {
-    title: "Видео по установкам",
-    description: "Пока оставляем placeholder, позже подключим реальные ролики.",
-    icon: "🎬"
-  },
-  {
-    title: "Тесты",
-    description: "Короткие вопросы после общего модуля и по каждой установке.",
-    icon: "🧪"
-  },
-  {
-    title: "Журнал",
-    description: "Локальное сохранение результата с заделом под Google Sheets.",
-    icon: "📒",
-    warning: true
+let currentScreen = 0;
+
+const stepLabel = document.getElementById("stepLabel");
+const stepPercent = document.getElementById("stepPercent");
+const progressFill = document.getElementById("progressFill");
+const screenIcon = document.getElementById("screenIcon");
+const screenKicker = document.getElementById("screenKicker");
+const screenTitle = document.getElementById("screenTitle");
+const screenText = document.getElementById("screenText");
+const screenList = document.getElementById("screenList");
+const screenNotice = document.getElementById("screenNotice");
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+
+function renderScreen() {
+  const screen = screens[currentScreen];
+  const percent = Math.round(((currentScreen + 1) / screens.length) * 100);
+
+  stepLabel.textContent = `Шаг ${currentScreen + 1} из ${screens.length}`;
+  stepPercent.textContent = `${percent}%`;
+  progressFill.style.width = `${percent}%`;
+
+  screenIcon.textContent = screen.icon;
+  screenKicker.textContent = screen.kicker;
+  screenTitle.textContent = screen.title;
+  screenText.textContent = screen.text;
+
+  screenList.innerHTML = "";
+  screen.items.forEach((item, index) => {
+    const row = document.createElement("div");
+    row.className = "list-item";
+    row.innerHTML = `<span>${index + 1}</span><p>${item}</p>`;
+    screenList.appendChild(row);
+  });
+
+  if (screen.notice) {
+    screenNotice.textContent = screen.notice;
+    screenNotice.classList.add("show");
+  } else {
+    screenNotice.textContent = "";
+    screenNotice.classList.remove("show");
   }
-];
 
-function createRouteCard(step, index) {
-  const card = document.createElement("article");
-  card.className = "route-card";
-  card.innerHTML = `
-    <div class="card-top">
-      <span class="card-number">${index + 1}</span>
-      <span class="card-icon" aria-hidden="true">${step.icon}</span>
-    </div>
-    <h3>${step.title}</h3>
-    <p>${step.description}</p>
-  `;
-  return card;
+  prevBtn.disabled = currentScreen === 0;
+  nextBtn.textContent = currentScreen === screens.length - 1 ? "Завершить" : "Далее";
 }
 
-function createModuleCard(module) {
-  const card = document.createElement("article");
-  card.className = `module-card${module.warning ? " warning" : ""}`;
-  card.innerHTML = `
-    <div class="card-top">
-      <span class="card-icon" aria-hidden="true">${module.icon}</span>
-    </div>
-    <h3>${module.title}</h3>
-    <p>${module.description}</p>
-  `;
-  return card;
+function nextScreen() {
+  if (currentScreen < screens.length - 1) {
+    currentScreen += 1;
+    renderScreen();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    return;
+  }
+
+  currentScreen = 0;
+  renderScreen();
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function renderCards() {
-  const routeGrid = document.querySelector("#architecture");
-  const moduleGrid = document.querySelector("#modules");
-
-  routeSteps.forEach((step, index) => {
-    routeGrid.appendChild(createRouteCard(step, index));
-  });
-
-  appModules.forEach((module) => {
-    moduleGrid.appendChild(createModuleCard(module));
-  });
+function prevScreen() {
+  if (currentScreen > 0) {
+    currentScreen -= 1;
+    renderScreen();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 }
 
-function setupScrollButtons() {
-  const buttons = document.querySelectorAll("[data-scroll-to]");
+nextBtn.addEventListener("click", nextScreen);
+prevBtn.addEventListener("click", prevScreen);
 
-  buttons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const targetId = button.getAttribute("data-scroll-to");
-      const target = document.getElementById(targetId);
-
-      if (target) {
-        target.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    });
-  });
-}
-
-function init() {
-  renderCards();
-  setupScrollButtons();
-}
-
-document.addEventListener("DOMContentLoaded", init);
+document.addEventListener("DOMContentLoaded", renderScreen);
