@@ -8,7 +8,12 @@
     mode: 'home',
     commonSlide: 0,
     selectedEquipmentId: null,
-    equipmentSlide: 0
+    equipmentSlide: 0,
+    employee: {
+      fullName: '',
+      personnelNumber: '',
+      position: ''
+    }
   };
 
   const app = document.getElementById('app');
@@ -60,8 +65,12 @@
     return window.OMD_EQUIPMENT.find((item) => item.id === id);
   }
 
+  function getTrainingRecords() {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  }
+
   function saveTrainingRecord(record) {
-    const records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const records = getTrainingRecords();
     records.unshift(record);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records.slice(0, 50)));
   }
@@ -136,6 +145,8 @@
     state.mode = 'home';
     setBreadcrumb([]);
 
+    const recordsCount = getTrainingRecords().length;
+
     app.innerHTML = `
       <div class="page home-page">
         <section class="home-modern-hero">
@@ -164,6 +175,9 @@
           <button class="btn btn-primary btn-full home-main-btn" id="employeeBtn" type="button">
             Начать обучение
           </button>
+          <button class="btn btn-secondary btn-full mt-12" id="journalBtn" type="button">
+            Журнал прохождения${recordsCount ? ` · ${recordsCount}` : ''}
+          </button>
         </section>
 
         <section class="home-route-card">
@@ -171,11 +185,11 @@
           <div class="home-route-timeline">
             <div class="home-route-step active">
               <span>1</span>
-              <div><strong>Подразделение</strong><p>Выбор участка, сектора или лаборатории</p></div>
+              <div><strong>Идентификация</strong><p>Сотрудник вводит ФИО перед началом обучения</p></div>
             </div>
             <div class="home-route-step">
               <span>2</span>
-              <div><strong>Общий модуль</strong><p>Правила, которые повторяются для оборудования</p></div>
+              <div><strong>Подразделение</strong><p>Выбор участка, сектора или лаборатории</p></div>
             </div>
             <div class="home-route-step">
               <span>3</span>
@@ -183,7 +197,7 @@
             </div>
             <div class="home-route-step">
               <span>4</span>
-              <div><strong>Результат</strong><p>Фиксация даты прохождения и срока действия 3 месяца</p></div>
+              <div><strong>Результат</strong><p>Фиксация сотрудника, даты и срока действия 3 месяца</p></div>
             </div>
           </div>
         </section>
@@ -201,7 +215,116 @@
       </div>
     `;
 
-    document.getElementById('employeeBtn').addEventListener('click', renderDepartments);
+    document.getElementById('employeeBtn').addEventListener('click', renderEmployeeForm);
+    document.getElementById('journalBtn').addEventListener('click', renderJournal);
+    scrollTop();
+  }
+
+  function renderEmployeeForm() {
+    state.mode = 'employee-form';
+    setBreadcrumb([
+      { label: 'Главная', onClick: renderHome },
+      { label: 'Идентификация' }
+    ]);
+
+    app.innerHTML = `
+      <div class="page">
+        <div class="page-head">
+          <div class="page-head-eyebrow">Перед обучением</div>
+          <div class="page-head-title">Кто проходит инструктаж?</div>
+          <div class="page-head-sub">Введите данные сотрудника. Они будут сохранены в журнале прохождения.</div>
+        </div>
+
+        <div class="form-block">
+          <div class="form-block-title">Данные сотрудника</div>
+          <div class="form-group">
+            <label class="form-label" for="employeeName">ФИО <span class="req">*</span></label>
+            <input class="form-input" id="employeeName" type="text" placeholder="Например: Иванов Иван Иванович" autocomplete="name" value="${esc(state.employee.fullName)}" />
+            <div class="form-hint" id="employeeNameHint">Обязательное поле для записи в журнал.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="employeeNumber">Табельный номер</label>
+            <input class="form-input" id="employeeNumber" type="text" placeholder="Можно оставить пустым" value="${esc(state.employee.personnelNumber)}" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="employeePosition">Должность / подразделение</label>
+            <input class="form-input" id="employeePosition" type="text" placeholder="Например: инженер, участок ЭИП ОМД" value="${esc(state.employee.position)}" />
+          </div>
+        </div>
+
+        <div class="info-box">На первом этапе данные сохраняются локально в браузере. Позже подключим отправку в Google Sheets / журнал.</div>
+        <div class="page-bottom-spacer"></div>
+      </div>
+      <div class="sticky-bottom no-print">
+        <div class="sticky-bottom-inner">
+          <button class="btn btn-secondary" id="employeeFormBack" type="button">← Назад</button>
+          <button class="btn btn-primary btn-grow" id="employeeFormNext" type="button">Продолжить →</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('employeeFormBack').addEventListener('click', renderHome);
+    document.getElementById('employeeFormNext').addEventListener('click', () => {
+      const nameInput = document.getElementById('employeeName');
+      const hint = document.getElementById('employeeNameHint');
+      const fullName = nameInput.value.trim();
+
+      if (!fullName) {
+        nameInput.classList.add('err');
+        hint.classList.add('err');
+        hint.textContent = 'Введите ФИО сотрудника.';
+        nameInput.focus();
+        return;
+      }
+
+      state.employee.fullName = fullName;
+      state.employee.personnelNumber = document.getElementById('employeeNumber').value.trim();
+      state.employee.position = document.getElementById('employeePosition').value.trim();
+      renderDepartments();
+    });
+    scrollTop();
+  }
+
+  function renderJournal() {
+    const records = getTrainingRecords();
+    setBreadcrumb([
+      { label: 'Главная', onClick: renderHome },
+      { label: 'Журнал' }
+    ]);
+
+    const content = records.length ? records.map((record) => {
+      const expired = new Date(record.validUntil) < new Date();
+      return `
+        <div class="receipt-card">
+          <div class="receipt-row"><span class="receipt-key">Сотрудник</span><span class="receipt-val">${esc(record.employeeName || 'Не указан')}</span></div>
+          <div class="receipt-row"><span class="receipt-key">Установка</span><span class="receipt-val">${esc(record.equipmentName || 'Не выбрана')}</span></div>
+          <div class="receipt-row"><span class="receipt-key">Пройдено</span><span class="receipt-val">${formatDate(record.completedAt)}</span></div>
+          <div class="receipt-row"><span class="receipt-key">Действует до</span><span class="receipt-val">${formatDate(record.validUntil)}</span></div>
+          <div class="receipt-row"><span class="receipt-key">Статус</span><span class="receipt-val">${expired ? 'Требуется повторить' : 'Действует'}</span></div>
+        </div>
+      `;
+    }).join('') : '<div class="info-box">Пока нет записей. Пройдите обучение, чтобы запись появилась в журнале.</div>';
+
+    app.innerHTML = `
+      <div class="page">
+        <div class="page-head">
+          <div class="page-head-eyebrow">Журнал прохождения</div>
+          <div class="page-head-title">Кто прошёл инструктаж</div>
+          <div class="page-head-sub">Здесь отображаются локально сохраненные записи. Обучение действует 3 месяца.</div>
+        </div>
+        ${content}
+        <div class="page-bottom-spacer"></div>
+      </div>
+      <div class="sticky-bottom no-print">
+        <div class="sticky-bottom-inner">
+          <button class="btn btn-secondary" id="journalBack" type="button">← Главная</button>
+          <button class="btn btn-primary btn-grow" id="journalStart" type="button">Новое обучение</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('journalBack').addEventListener('click', renderHome);
+    document.getElementById('journalStart').addEventListener('click', renderEmployeeForm);
     scrollTop();
   }
 
@@ -209,7 +332,7 @@
     state.mode = 'departments';
     setBreadcrumb([
       { label: 'Главная', onClick: renderHome },
-      { label: 'Сотрудник' }
+      { label: state.employee.fullName || 'Сотрудник' }
     ]);
 
     const items = window.DEPARTMENTS
@@ -232,7 +355,7 @@
     app.innerHTML = `
       <div class="page">
         <div class="page-head">
-          <div class="page-head-eyebrow">Сотрудник</div>
+          <div class="page-head-eyebrow">Сотрудник: ${esc(state.employee.fullName || 'не указан')}</div>
           <div class="page-head-title">Выберите подразделение</div>
           <div class="page-head-sub">Пока подробно прорабатываем участок ЭИП ОМД. Остальные направления уже заложены в структуру.</div>
         </div>
@@ -254,7 +377,7 @@
     const dept = window.DEPARTMENTS.find((item) => item.id === deptId);
     setBreadcrumb([
       { label: 'Главная', onClick: renderHome },
-      { label: 'Сотрудник', onClick: renderDepartments },
+      { label: 'Подразделения', onClick: renderDepartments },
       { label: dept.shortName }
     ]);
 
@@ -280,7 +403,7 @@
 
     setBreadcrumb([
       { label: 'Главная', onClick: renderHome },
-      { label: 'Сотрудник', onClick: renderDepartments },
+      { label: 'Подразделения', onClick: renderDepartments },
       { label: 'ЭИП ОМД' },
       { label: `Раздел ${index + 1}` }
     ]);
@@ -288,7 +411,7 @@
     app.innerHTML = `
       <div class="page">
         <div class="page-head">
-          <div class="page-head-eyebrow">Общий модуль участка</div>
+          <div class="page-head-eyebrow">Общий модуль участка · ${esc(state.employee.fullName || 'сотрудник')}</div>
           <div class="page-head-title">${esc(slide.title)}</div>
           <div class="page-head-sub">${esc(module.subtitle)}</div>
         </div>
@@ -333,7 +456,7 @@
   function renderEquipmentList() {
     setBreadcrumb([
       { label: 'Главная', onClick: renderHome },
-      { label: 'Сотрудник', onClick: renderDepartments },
+      { label: 'Подразделения', onClick: renderDepartments },
       { label: 'ЭИП ОМД', onClick: () => renderOmdCommon(0) },
       { label: 'Установки' }
     ]);
@@ -358,7 +481,7 @@
     app.innerHTML = `
       <div class="page">
         <div class="page-head">
-          <div class="page-head-eyebrow">Участок ЭИП ОМД</div>
+          <div class="page-head-eyebrow">Участок ЭИП ОМД · ${esc(state.employee.fullName || 'сотрудник')}</div>
           <div class="page-head-title">Выберите установку</div>
           <div class="page-head-sub">Каждый модуль установки начнётся с вводного видео. После прохождения обучение действует 3 месяца.</div>
         </div>
@@ -442,7 +565,7 @@
     app.innerHTML = `
       <div class="page">
         <div class="page-head">
-          <div class="page-head-eyebrow">Инструктаж по установке</div>
+          <div class="page-head-eyebrow">Инструктаж по установке · ${esc(state.employee.fullName || 'сотрудник')}</div>
           <div class="page-head-title">${esc(slide.title)}</div>
           <div class="page-head-sub">${esc(equipment.name)}</div>
         </div>
@@ -491,6 +614,9 @@
 
     const record = {
       id: `OT-${Date.now()}`,
+      employeeName: state.employee.fullName || 'Не указан',
+      personnelNumber: state.employee.personnelNumber || '',
+      position: state.employee.position || '',
       completedAt: completedAt.toISOString(),
       validUntil: validUntil.toISOString(),
       validityMonths: TRAINING_VALIDITY_MONTHS,
@@ -515,6 +641,8 @@
           <div class="done-hero-sub">Обучение действительно 3 месяца. Повторное прохождение нужно до ${formatDate(validUntil)}.</div>
         </div>
         <div class="receipt-card">
+          <div class="receipt-row"><span class="receipt-key">Сотрудник</span><span class="receipt-val">${esc(record.employeeName)}</span></div>
+          <div class="receipt-row"><span class="receipt-key">Табельный №</span><span class="receipt-val">${esc(record.personnelNumber || 'не указан')}</span></div>
           <div class="receipt-row"><span class="receipt-key">Статус</span><span class="receipt-val">Действует</span></div>
           <div class="receipt-row"><span class="receipt-key">Установка</span><span class="receipt-val">${esc(record.equipmentName)}</span></div>
           <div class="receipt-row"><span class="receipt-key">Дата прохождения</span><span class="receipt-val">${formatDate(completedAt)}</span></div>
@@ -522,17 +650,19 @@
           <div class="receipt-row"><span class="receipt-key">Периодичность</span><span class="receipt-val">1 раз в 3 месяца</span></div>
           <div class="receipt-row"><span class="receipt-key">Журнал</span><span class="receipt-val">Запись сохранена локально</span></div>
         </div>
-        <div class="info-box">На следующем этапе добавим ввод ФИО сотрудника и отправку записи в Google Sheets / журнал прохождения.</div>
+        <div class="info-box">Позже эту запись можно будет автоматически отправлять в Google Sheets / общий журнал прохождения.</div>
         <div class="page-bottom-spacer"></div>
       </div>
       <div class="sticky-bottom no-print">
         <div class="sticky-bottom-inner">
-          <button class="btn btn-primary btn-full" id="homeBtn" type="button">На главную</button>
+          <button class="btn btn-secondary" id="journalBtnDone" type="button">Журнал</button>
+          <button class="btn btn-primary btn-grow" id="homeBtn" type="button">На главную</button>
         </div>
       </div>
     `;
 
     document.getElementById('homeBtn').addEventListener('click', renderHome);
+    document.getElementById('journalBtnDone').addEventListener('click', renderJournal);
     scrollTop();
   }
 
