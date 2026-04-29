@@ -110,32 +110,62 @@
     setBreadcrumb([]);
 
     app.innerHTML = `
-      <div class="page">
-        <section class="home-hero">
-          <div class="home-hero-shield">🛡️</div>
-          <h1 class="home-hero-title">Инструктаж по охране труда для сотрудников</h1>
+      <div class="page home-page">
+        <section class="home-intro-card">
+          <div class="home-intro-top">
+            <div class="home-hero-shield">🛡️</div>
+            <div class="home-intro-label">Цифровой инструктаж</div>
+          </div>
+          <h1 class="home-hero-title">Охрана труда при работе на оборудовании</h1>
           <p class="home-hero-sub">
-            Последовательное обучение по подразделениям и установкам: общий модуль участка,
-            видео по оборудованию, карточки безопасной работы, тест и фиксация результата.
+            Система помогает сотруднику пройти обучение по своему подразделению и конкретной установке:
+            от общих требований безопасности до особенностей работы на оборудовании.
           </p>
-          <div class="home-meta-bar">
-            <span class="home-meta-chip">📱 Mobile-first</span>
-            <span class="home-meta-chip">🧭 Пошаговый UX</span>
-            <span class="home-meta-chip">🟧 Стиль ИЦ ТМК</span>
+          <button class="btn btn-primary btn-full home-main-btn" id="employeeBtn" type="button">
+            Начать обучение
+          </button>
+        </section>
+
+        <section class="home-section-card">
+          <div class="home-section-title">Как проходит обучение</div>
+          <div class="home-route-list">
+            <div class="home-route-item">
+              <span>1</span>
+              <div>
+                <strong>Выбор подразделения</strong>
+                <p>Сотрудник выбирает участок, сектор или лабораторию.</p>
+              </div>
+            </div>
+            <div class="home-route-item">
+              <span>2</span>
+              <div>
+                <strong>Общий модуль</strong>
+                <p>Повторяющиеся правила безопасности выносятся отдельно.</p>
+              </div>
+            </div>
+            <div class="home-route-item">
+              <span>3</span>
+              <div>
+                <strong>Установка и видео</strong>
+                <p>По каждому оборудованию будет вводное видео и карточки рисков.</p>
+              </div>
+            </div>
+            <div class="home-route-item">
+              <span>4</span>
+              <div>
+                <strong>Тест и фиксация</strong>
+                <p>Результат прохождения сохраняется в журнале.</p>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section class="role-grid">
-          <button class="role-card" id="employeeBtn" type="button">
-            <div class="role-card-header">
-              <div class="role-card-icon">⚙️</div>
-              <div>
-                <div class="role-card-title">Начать обучение</div>
-                <span class="role-card-tag">сотрудник</span>
-              </div>
-            </div>
-            <p class="role-card-desc">Выбор подразделения, общий модуль участка, выбор установки, видео, карточки и тестирование.</p>
-          </button>
+        <section class="home-accent-card">
+          <div class="home-accent-icon">⚙️</div>
+          <div>
+            <div class="home-accent-title">Пилотный раздел — участок ЭИП ОМД</div>
+            <p>Сначала прорабатываем общий инструктаж участка и четыре установки: ЭУ-ПППТ, ST-ХПРТ, пресс и острильный станок.</p>
+          </div>
         </section>
       </div>
     `;
