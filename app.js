@@ -1,162 +1,547 @@
-const screens = [
-  {
-    kicker: "Старт",
-    icon: "🛡️",
-    title: "Цифровой инструктаж по охране труда",
-    text: "Приложение будет вести сотрудника последовательно: от базовых правил безопасности до обучения по конкретной установке и фиксации результата.",
-    items: [
-      "Чистый mobile-first интерфейс",
-      "Один экран — один смысл",
-      "Короткие карточки вместо длинных инструкций",
-      "Задел под Telegram WebApp и GitHub Pages"
-    ],
-    notice: "Основа логики — уже опубликованный формат обучения для командированных: пользователь не видит всё сразу, а проходит маршрут по шагам."
-  },
-  {
-    kicker: "Шаг 1",
-    icon: "📘",
-    title: "Общий инструктаж для всех",
-    text: "Сначала сотрудник изучает базовые требования, которые действуют для всех направлений: допуск, СИЗ, порядок действий при аварии и ответственность.",
-    items: [
-      "Допуск к работе",
-      "Средства индивидуальной защиты",
-      "Пожар, травма, электробезопасность",
-      "Короткий тест по общим требованиям"
-    ]
-  },
-  {
-    kicker: "Шаг 2",
-    icon: "🏢",
-    title: "Выбор отдела и подразделения",
-    text: "После общего блока пользователь выбирает нужное направление: отдел, сектор, лабораторию или участок. У каждого подразделения будет свой общий модуль.",
-    items: [
-      "Отделы и лаборатории",
-      "Секторы и участки",
-      "Общие риски конкретного направления",
-      "Без дублирования одинаковых требований"
-    ]
-  },
-  {
-    kicker: "Шаг 3",
-    icon: "⚙️",
-    title: "Выбор установки",
-    text: "Далее сотрудник выбирает конкретное оборудование, на котором ему предстоит работать. Для каждой установки будет отдельная карточка обучения.",
-    items: [
-      "Название установки",
-      "Подразделение и ответственный",
-      "Номер ИОТ при наличии",
-      "Основные опасности"
-    ]
-  },
-  {
-    kicker: "Шаг 4",
-    icon: "▶️",
-    title: "Видео по установке",
-    text: "Модуль конкретной установки начинается с вводного видео. Пока экран оставляем пустым, позже сюда будет добавлен ролик со сценарием безопасной работы.",
-    items: [
-      "Пока показываем placeholder",
-      "Позже подключаем mp4-файл",
-      "Видео адаптируется под телефон",
-      "Без autoplay со звуком"
-    ],
-    notice: "Видео нужно именно для установки: показать пульт, опасные зоны, рабочую сторону, порядок запуска и действия при нештатной ситуации."
-  },
-  {
-    kicker: "Шаг 5",
-    icon: "⚠️",
-    title: "Инструктаж по установке",
-    text: "После видео идут короткие экраны по конкретному оборудованию: опасные зоны, проверка перед началом работы, безопасный порядок действий и запреты.",
-    items: [
-      "Опасные зоны",
-      "Перед началом работы",
-      "Безопасный порядок работы",
-      "Что запрещено и что делать при аварии"
-    ]
-  },
-  {
-    kicker: "Финал",
-    icon: "✅",
-    title: "Тест и журнал прохождения",
-    text: "В конце сотрудник проходит тест. Результат фиксируется в журнале: дата, установка, процент прохождения и статус допуска.",
-    items: [
-      "Порог прохождения — 80%",
-      "Результат: допущен / не допущен",
-      "Сохранение в localStorage на первом этапе",
-      "Дальше — подключение Google Sheets"
-    ],
-    notice: "Следующий этап разработки — добавить подробный общий инструктаж участка ЭИП ОМД на 12 экранов."
-  }
-];
+(() => {
+  'use strict';
 
-let currentScreen = 0;
+  const state = {
+    mode: 'home',
+    commonSlide: 0,
+    selectedEquipmentId: null
+  };
 
-const stepLabel = document.getElementById("stepLabel");
-const stepPercent = document.getElementById("stepPercent");
-const progressFill = document.getElementById("progressFill");
-const screenIcon = document.getElementById("screenIcon");
-const screenKicker = document.getElementById("screenKicker");
-const screenTitle = document.getElementById("screenTitle");
-const screenText = document.getElementById("screenText");
-const screenList = document.getElementById("screenList");
-const screenNotice = document.getElementById("screenNotice");
-const prevBtn = document.getElementById("prevBtn");
-const nextBtn = document.getElementById("nextBtn");
+  const app = document.getElementById('app');
+  const dtLabel = document.getElementById('dtLabel');
+  const breadcrumbBar = document.getElementById('breadcrumbBar');
+  const breadcrumbInner = document.getElementById('breadcrumbInner');
 
-function renderScreen() {
-  const screen = screens[currentScreen];
-  const percent = Math.round(((currentScreen + 1) / screens.length) * 100);
+  const ICONS = {
+    map: '📍', walk: '🚶', car: '🚗', stairs: '🪜', phone: '📞', zap: '⚡', tag: '🏷️', fence: '🚧',
+    power: '🔌', alert: '⚠️', check: '✅', bell: '🔔', 'hard-hat': '⛑️', ban: '🚫', drop: '💧',
+    fork: '🍽️', hand: '🤲', flask: '🧪', glasses: '🥽', headphones: '🎧', vest: '🦺', glove: '🧤',
+    ice: '🌨️', monitor: '🖥️', body: '🧍', eye: '👁️', search: '🔍', heart: '❤️', user: '👤',
+    bulb: '💡', brush: '✨', shield: '🛡️', fire: '🔥', burn: '🌡️', book: '📖', ok: '✅'
+  };
 
-  stepLabel.textContent = `Шаг ${currentScreen + 1} из ${screens.length}`;
-  stepPercent.textContent = `${percent}%`;
-  progressFill.style.width = `${percent}%`;
+  const CARD_TYPE = {
+    rule: { label: 'ПРАВИЛО', cls: 'sc-rule' },
+    ban: { label: 'ЗАПРЕТ', cls: 'sc-ban' },
+    warn: { label: 'ОПАСНОСТЬ', cls: 'sc-warn' },
+    ok: { label: 'ОК', cls: 'sc-ok' }
+  };
 
-  screenIcon.textContent = screen.icon;
-  screenKicker.textContent = screen.kicker;
-  screenTitle.textContent = screen.title;
-  screenText.textContent = screen.text;
-
-  screenList.innerHTML = "";
-  screen.items.forEach((item, index) => {
-    const row = document.createElement("div");
-    row.className = "list-item";
-    row.innerHTML = `<span>${index + 1}</span><p>${item}</p>`;
-    screenList.appendChild(row);
-  });
-
-  if (screen.notice) {
-    screenNotice.textContent = screen.notice;
-    screenNotice.classList.add("show");
-  } else {
-    screenNotice.textContent = "";
-    screenNotice.classList.remove("show");
+  function esc(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
-  prevBtn.disabled = currentScreen === 0;
-  nextBtn.textContent = currentScreen === screens.length - 1 ? "Завершить" : "Далее";
-}
-
-function nextScreen() {
-  if (currentScreen < screens.length - 1) {
-    currentScreen += 1;
-    renderScreen();
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    return;
+  function pad(value) {
+    return String(value).padStart(2, '0');
   }
 
-  currentScreen = 0;
-  renderScreen();
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function prevScreen() {
-  if (currentScreen > 0) {
-    currentScreen -= 1;
-    renderScreen();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  function updateDate() {
+    const d = new Date();
+    dtLabel.textContent = `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
-}
 
-nextBtn.addEventListener("click", nextScreen);
-prevBtn.addEventListener("click", prevScreen);
+  function scrollTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
-document.addEventListener("DOMContentLoaded", renderScreen);
+  function setBreadcrumb(items = []) {
+    if (!items.length) {
+      breadcrumbBar.classList.add('hidden');
+      breadcrumbInner.innerHTML = '';
+      return;
+    }
+
+    breadcrumbBar.classList.remove('hidden');
+    breadcrumbInner.innerHTML = items.map((item, index) => {
+      const isLast = index === items.length - 1;
+      const sep = index ? '<span class="bc-sep">/</span>' : '';
+      return `${sep}<div class="bc-item ${isLast ? 'active' : ''}"><button data-bc="${index}" type="button">${esc(item.label)}</button></div>`;
+    }).join('');
+
+    breadcrumbInner.querySelectorAll('[data-bc]').forEach((button) => {
+      const index = Number(button.dataset.bc);
+      if (!items[index].onClick) return;
+      button.addEventListener('click', items[index].onClick);
+    });
+  }
+
+  function getIcon(name) {
+    return `<span class="card-emoji-wrap">${ICONS[name] || name || '•'}</span>`;
+  }
+
+  function renderSafetyCard(card) {
+    const type = CARD_TYPE[card.type] || CARD_TYPE.rule;
+    return `
+      <article class="safety-card ${type.cls}">
+        <div class="safety-card-icon">${getIcon(card.icon)}</div>
+        <div class="safety-card-title">${esc(card.title)}</div>
+        <div class="safety-card-sub">${esc(card.sub)}</div>
+        <div class="safety-card-badge ${type.cls}-badge">${type.label}</div>
+      </article>
+    `;
+  }
+
+  function renderStepper({ current, total, label }) {
+    const pct = Math.round((current / total) * 100);
+    const dots = Array.from({ length: total }, (_, index) => {
+      const num = index + 1;
+      const cls = num < current ? 'done' : num === current ? 'active' : '';
+      return `<div class="flow-dot ${cls}">${num < current ? '✓' : num}</div>`;
+    }).join('');
+
+    return `
+      <div class="flow-stepper">
+        <div class="flow-stepper-top">
+          <span class="flow-stepper-label">${esc(label)}</span>
+          <span class="flow-stepper-pct">${pct}%</span>
+        </div>
+        <div class="flow-bar-outer"><div class="flow-bar-inner" style="width:${pct}%"></div></div>
+        <div class="flow-dots">${dots}</div>
+      </div>
+    `;
+  }
+
+  function renderHome() {
+    state.mode = 'home';
+    setBreadcrumb([]);
+
+    app.innerHTML = `
+      <div class="page">
+        <section class="home-hero">
+          <div class="home-hero-shield">🛡️</div>
+          <h1 class="home-hero-title">Система контроля соблюдения ТБ</h1>
+          <p class="home-hero-sub">
+            Чистый последовательный интерфейс на основе опубликованного релиза для командированных.
+            Дальше расширяем его под сотрудников и установки.
+          </p>
+          <div class="home-meta-bar">
+            <span class="home-meta-chip">📱 Mobile-first</span>
+            <span class="home-meta-chip">🧭 Пошаговый UX</span>
+            <span class="home-meta-chip">🟧 Стиль ИЦ ТМК</span>
+          </div>
+        </section>
+
+        <section class="role-grid">
+          <button class="role-card" id="guestBtn" type="button">
+            <div class="role-card-header">
+              <div class="role-card-icon">👤</div>
+              <div>
+                <div class="role-card-title">Командированный / посетитель</div>
+                <span class="role-card-tag">как в текущем релизе</span>
+              </div>
+            </div>
+            <p class="role-card-desc">Вводное видео, карточки требований, подтверждение прохождения и финальный ID.</p>
+          </button>
+
+          <button class="role-card" id="employeeBtn" type="button">
+            <div class="role-card-header">
+              <div class="role-card-icon">⚙️</div>
+              <div>
+                <div class="role-card-title">Сотрудник</div>
+                <span class="role-card-tag">новый модуль</span>
+              </div>
+            </div>
+            <p class="role-card-desc">Выбор подразделения, общий модуль участка, выбор установки, видео и тест.</p>
+          </button>
+        </section>
+      </div>
+    `;
+
+    document.getElementById('guestBtn').addEventListener('click', renderGuestStart);
+    document.getElementById('employeeBtn').addEventListener('click', renderDepartments);
+    scrollTop();
+  }
+
+  function renderGuestStart() {
+    state.mode = 'guest';
+    setBreadcrumb([
+      { label: 'Главная', onClick: renderHome },
+      { label: 'Командированные' }
+    ]);
+
+    app.innerHTML = `
+      <div class="page">
+        <div class="page-head">
+          <div class="page-head-eyebrow">Командированные и посетители</div>
+          <div class="page-head-title">Вводный инструктаж</div>
+          <div class="page-head-sub">Этот раздел сохраняет логику уже опубликованного релиза: видео → карточки → подтверждение.</div>
+        </div>
+
+        ${renderStepper({ current: 1, total: 4, label: 'Шаг 1 из 4 — старт инструктажа' })}
+
+        <div class="slide-block">
+          <div class="slide-block-head">
+            <div class="slide-block-num">▶</div>
+            <div class="slide-block-title">Видеоинструктаж</div>
+          </div>
+          <div class="video-placeholder">
+            <div class="vp-icon">▶</div>
+            <div class="vp-title">Вводный видеоинструктаж</div>
+            <div class="vp-sub">Позже сюда можно перенести реальное видео из релиза defender.</div>
+            <button class="vp-play-btn" id="guestSlidesBtn" type="button">Перейти к карточкам</button>
+            <div class="vp-note">Пока это демонстрационный экран.</div>
+          </div>
+        </div>
+        <div class="page-bottom-spacer"></div>
+      </div>
+      <div class="sticky-bottom no-print">
+        <div class="sticky-bottom-inner">
+          <button class="btn btn-secondary" id="guestBackBtn" type="button">← Назад</button>
+          <button class="btn btn-primary btn-grow" id="guestNextBtn" type="button">К карточкам →</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('guestBackBtn').addEventListener('click', renderHome);
+    document.getElementById('guestNextBtn').addEventListener('click', renderGuestSlides);
+    document.getElementById('guestSlidesBtn').addEventListener('click', renderGuestSlides);
+    scrollTop();
+  }
+
+  function renderGuestSlides() {
+    const slide = window.GUEST_INTRO?.[0];
+    setBreadcrumb([
+      { label: 'Главная', onClick: renderHome },
+      { label: 'Командированные', onClick: renderGuestStart },
+      { label: 'Карточки' }
+    ]);
+
+    app.innerHTML = `
+      <div class="page">
+        <div class="page-head">
+          <div class="page-head-eyebrow">Вводный инструктаж</div>
+          <div class="page-head-title">${esc(slide.title)}</div>
+        </div>
+        ${renderStepper({ current: 2, total: 4, label: 'Шаг 2 из 4 — карточки требований' })}
+        <div class="slide-block">
+          <div class="slide-block-head">
+            <div class="slide-block-num">1</div>
+            <div class="slide-block-title">${esc(slide.title)}</div>
+          </div>
+          <div class="slide-cards-grid">${slide.cards.map(renderSafetyCard).join('')}</div>
+          <div class="slide-footer">
+            <label class="confirm-row">
+              <input type="checkbox" class="confirm-check" id="guestConfirm" />
+              <span class="confirm-label">Ознакомлен с разделом</span>
+            </label>
+          </div>
+        </div>
+        <div class="page-bottom-spacer"></div>
+      </div>
+      <div class="sticky-bottom no-print">
+        <div class="sticky-bottom-inner">
+          <button class="btn btn-secondary" id="guestSlidesBack" type="button">← Видео</button>
+          <button class="btn btn-primary btn-grow" id="guestDoneBtn" type="button" disabled>Завершить →</button>
+        </div>
+      </div>
+    `;
+
+    const confirm = document.getElementById('guestConfirm');
+    const done = document.getElementById('guestDoneBtn');
+    confirm.addEventListener('change', () => { done.disabled = !confirm.checked; });
+    document.getElementById('guestSlidesBack').addEventListener('click', renderGuestStart);
+    done.addEventListener('click', renderDone);
+    scrollTop();
+  }
+
+  function renderDepartments() {
+    state.mode = 'departments';
+    setBreadcrumb([
+      { label: 'Главная', onClick: renderHome },
+      { label: 'Сотрудник' }
+    ]);
+
+    const items = window.DEPARTMENTS
+      .filter((dept) => dept.id !== 'guest')
+      .map((dept) => `
+        <button class="list-card" type="button" data-dept="${dept.id}">
+          <div class="list-card-header">
+            <div class="list-card-icon">${dept.icon}</div>
+            <div>
+              <div class="list-card-title">${esc(dept.name)}</div>
+              <div class="list-card-sub">${esc(dept.description)}</div>
+              <div class="list-card-meta">
+                <span class="badge ${dept.status === 'pilot' ? 'badge-orange' : 'badge-gray'}">${dept.status === 'pilot' ? 'пилот' : 'позже'}</span>
+              </div>
+            </div>
+          </div>
+        </button>
+      `).join('');
+
+    app.innerHTML = `
+      <div class="page">
+        <div class="page-head">
+          <div class="page-head-eyebrow">Сотрудник</div>
+          <div class="page-head-title">Выберите подразделение</div>
+          <div class="page-head-sub">Пока подробно прорабатываем участок ЭИП ОМД. Остальные направления уже заложены в структуру.</div>
+        </div>
+        <div class="list-stack">${items}</div>
+        <div class="page-bottom-spacer"></div>
+      </div>
+    `;
+
+    app.querySelectorAll('[data-dept]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.dept === 'omd') renderOmdCommon(0);
+        else renderPlaceholderDepartment(btn.dataset.dept);
+      });
+    });
+    scrollTop();
+  }
+
+  function renderPlaceholderDepartment(deptId) {
+    const dept = window.DEPARTMENTS.find((item) => item.id === deptId);
+    setBreadcrumb([
+      { label: 'Главная', onClick: renderHome },
+      { label: 'Сотрудник', onClick: renderDepartments },
+      { label: dept.shortName }
+    ]);
+
+    app.innerHTML = `
+      <div class="page">
+        <div class="page-head">
+          <div class="page-head-eyebrow">Раздел в структуре</div>
+          <div class="page-head-title">${esc(dept.name)}</div>
+          <div class="page-head-sub">Этот раздел будет наполнен после отработки эталонного сценария на участке ЭИП ОМД.</div>
+        </div>
+        <div class="info-box">Сначала доводим до качества ОМД: общий модуль → установки → видео → тест. Потом масштабируем на остальные направления.</div>
+      </div>
+    `;
+    scrollTop();
+  }
+
+  function renderOmdCommon(index = 0) {
+    state.mode = 'omd-common';
+    state.commonSlide = index;
+    const module = window.OMD_COMMON;
+    const slide = module.slides[index];
+    const total = module.slides.length;
+
+    setBreadcrumb([
+      { label: 'Главная', onClick: renderHome },
+      { label: 'Сотрудник', onClick: renderDepartments },
+      { label: 'ЭИП ОМД' },
+      { label: `Раздел ${index + 1}` }
+    ]);
+
+    app.innerHTML = `
+      <div class="page">
+        <div class="page-head">
+          <div class="page-head-eyebrow">Общий модуль участка</div>
+          <div class="page-head-title">${esc(slide.title)}</div>
+          <div class="page-head-sub">${esc(module.subtitle)}</div>
+        </div>
+        ${renderStepper({ current: index + 1, total, label: `Раздел ${index + 1} из ${total}` })}
+        <div class="slide-block">
+          <div class="slide-block-head">
+            <div class="slide-block-num">${index + 1}</div>
+            <div class="slide-block-title">${esc(slide.title)}</div>
+          </div>
+          <div class="slide-cards-grid">${slide.cards.map(renderSafetyCard).join('')}</div>
+          <div class="slide-footer">
+            <label class="confirm-row">
+              <input type="checkbox" class="confirm-check" id="omdConfirm" />
+              <span class="confirm-label">Ознакомлен с разделом</span>
+            </label>
+          </div>
+        </div>
+        <div class="page-bottom-spacer"></div>
+      </div>
+      <div class="sticky-bottom no-print">
+        <div class="sticky-bottom-inner">
+          <button class="btn btn-secondary" id="omdBack" type="button">← Назад</button>
+          <button class="btn btn-primary btn-grow" id="omdNext" type="button" disabled>${index < total - 1 ? 'Следующий раздел →' : 'Выбрать установку →'}</button>
+        </div>
+      </div>
+    `;
+
+    const confirm = document.getElementById('omdConfirm');
+    const next = document.getElementById('omdNext');
+    confirm.addEventListener('change', () => { next.disabled = !confirm.checked; });
+    document.getElementById('omdBack').addEventListener('click', () => {
+      if (index > 0) renderOmdCommon(index - 1);
+      else renderDepartments();
+    });
+    next.addEventListener('click', () => {
+      if (index < total - 1) renderOmdCommon(index + 1);
+      else renderEquipmentList();
+    });
+    scrollTop();
+  }
+
+  function renderEquipmentList() {
+    setBreadcrumb([
+      { label: 'Главная', onClick: renderHome },
+      { label: 'Сотрудник', onClick: renderDepartments },
+      { label: 'ЭИП ОМД', onClick: () => renderOmdCommon(0) },
+      { label: 'Установки' }
+    ]);
+
+    const items = window.OMD_EQUIPMENT.map((equipment) => `
+      <button class="list-card" type="button" data-equipment="${equipment.id}">
+        <div class="list-card-header">
+          <div class="list-card-icon">${equipment.icon}</div>
+          <div>
+            <div class="list-card-title">${esc(equipment.name)}</div>
+            <div class="list-card-sub">${esc(equipment.description)}</div>
+            <div class="list-card-meta">
+              <span class="badge badge-blue">${esc(equipment.instruction)}</span>
+              <span class="badge badge-gray">видео позже</span>
+            </div>
+          </div>
+        </div>
+      </button>
+    `).join('');
+
+    app.innerHTML = `
+      <div class="page">
+        <div class="page-head">
+          <div class="page-head-eyebrow">Участок ЭИП ОМД</div>
+          <div class="page-head-title">Выберите установку</div>
+          <div class="page-head-sub">Каждый модуль установки начнётся с вводного видео. Пока экран видео оставлен как placeholder.</div>
+        </div>
+        <div class="list-stack">${items}</div>
+        <div class="page-bottom-spacer"></div>
+      </div>
+    `;
+
+    app.querySelectorAll('[data-equipment]').forEach((btn) => {
+      btn.addEventListener('click', () => renderEquipmentVideo(btn.dataset.equipment));
+    });
+    scrollTop();
+  }
+
+  function renderEquipmentVideo(id) {
+    const equipment = window.OMD_EQUIPMENT.find((item) => item.id === id);
+    state.selectedEquipmentId = id;
+
+    setBreadcrumb([
+      { label: 'Главная', onClick: renderHome },
+      { label: 'ЭИП ОМД', onClick: () => renderOmdCommon(0) },
+      { label: 'Установки', onClick: renderEquipmentList },
+      { label: equipment.name }
+    ]);
+
+    app.innerHTML = `
+      <div class="page">
+        <div class="page-head">
+          <div class="page-head-eyebrow">${esc(equipment.instruction)}</div>
+          <div class="page-head-title">${esc(equipment.name)}</div>
+          <div class="page-head-sub">${esc(equipment.description)}</div>
+        </div>
+        ${renderStepper({ current: 1, total: 3, label: 'Шаг 1 из 3 — видео по установке' })}
+        <div class="slide-block">
+          <div class="slide-block-head">
+            <div class="slide-block-num">▶</div>
+            <div class="slide-block-title">Вводное видео по установке</div>
+          </div>
+          <div class="video-placeholder">
+            <div class="vp-icon">▶</div>
+            <div class="vp-title">Видеоинструкция будет добавлена позже</div>
+            <div class="vp-sub">Здесь будет ролик: назначение оборудования, опасные зоны, безопасный запуск, запреты и аварийные действия.</div>
+            <button class="vp-play-btn" id="equipmentCardsBtn" type="button">Перейти к карточкам</button>
+            <div class="vp-note">Поле videoSrc уже предусмотрено в данных.</div>
+          </div>
+        </div>
+        <div class="page-bottom-spacer"></div>
+      </div>
+      <div class="sticky-bottom no-print">
+        <div class="sticky-bottom-inner">
+          <button class="btn btn-secondary" id="equipmentBack" type="button">← Установки</button>
+          <button class="btn btn-primary btn-grow" id="equipmentNext" type="button">К карточкам →</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('equipmentBack').addEventListener('click', renderEquipmentList);
+    document.getElementById('equipmentNext').addEventListener('click', () => renderEquipmentCards(id));
+    document.getElementById('equipmentCardsBtn').addEventListener('click', () => renderEquipmentCards(id));
+    scrollTop();
+  }
+
+  function renderEquipmentCards(id) {
+    const equipment = window.OMD_EQUIPMENT.find((item) => item.id === id);
+    const cards = equipment.hazards.map((hazard) => ({ icon: 'alert', title: hazard, sub: 'Опасная зона или фактор риска. Подробный текст будет добавлен на следующем этапе из ИОТ.', type: 'warn' }));
+
+    app.innerHTML = `
+      <div class="page">
+        <div class="page-head">
+          <div class="page-head-eyebrow">Инструктаж по установке</div>
+          <div class="page-head-title">Опасные зоны</div>
+          <div class="page-head-sub">${esc(equipment.name)}</div>
+        </div>
+        ${renderStepper({ current: 2, total: 3, label: 'Шаг 2 из 3 — карточки установки' })}
+        <div class="slide-block">
+          <div class="slide-block-head">
+            <div class="slide-block-num">1</div>
+            <div class="slide-block-title">Ключевые опасности установки</div>
+          </div>
+          <div class="slide-cards-grid">${cards.map(renderSafetyCard).join('')}</div>
+          <div class="slide-footer">
+            <label class="confirm-row">
+              <input type="checkbox" class="confirm-check" id="equipmentConfirm" />
+              <span class="confirm-label">Ознакомлен с особенностями установки</span>
+            </label>
+          </div>
+        </div>
+        <div class="page-bottom-spacer"></div>
+      </div>
+      <div class="sticky-bottom no-print">
+        <div class="sticky-bottom-inner">
+          <button class="btn btn-secondary" id="cardsBack" type="button">← Видео</button>
+          <button class="btn btn-primary btn-grow" id="cardsDone" type="button" disabled>Завершить →</button>
+        </div>
+      </div>
+    `;
+
+    const confirm = document.getElementById('equipmentConfirm');
+    const done = document.getElementById('cardsDone');
+    confirm.addEventListener('change', () => { done.disabled = !confirm.checked; });
+    document.getElementById('cardsBack').addEventListener('click', () => renderEquipmentVideo(id));
+    done.addEventListener('click', renderDone);
+    scrollTop();
+  }
+
+  function renderDone() {
+    setBreadcrumb([
+      { label: 'Главная', onClick: renderHome },
+      { label: 'Завершено' }
+    ]);
+
+    app.innerHTML = `
+      <div class="page">
+        <div class="done-hero">
+          <div class="done-hero-ring">✓</div>
+          <div class="done-hero-title">Модуль завершён</div>
+          <div class="done-hero-sub">Результат пока фиксируется как демонстрационный. На следующем этапе подключим тест и журнал.</div>
+        </div>
+        <div class="receipt-card">
+          <div class="receipt-row"><span class="receipt-key">Статус</span><span class="receipt-val">Пройдено</span></div>
+          <div class="receipt-row"><span class="receipt-key">Формат</span><span class="receipt-val">Видео → карточки → подтверждение</span></div>
+          <div class="receipt-row"><span class="receipt-key">Следующий этап</span><span class="receipt-val">Расширить общий модуль ОМД до 12 экранов</span></div>
+        </div>
+        <div class="page-bottom-spacer"></div>
+      </div>
+      <div class="sticky-bottom no-print">
+        <div class="sticky-bottom-inner">
+          <button class="btn btn-primary btn-full" id="homeBtn" type="button">На главную</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('homeBtn').addEventListener('click', renderHome);
+    scrollTop();
+  }
+
+  function init() {
+    updateDate();
+    setInterval(updateDate, 60000);
+    renderHome();
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
