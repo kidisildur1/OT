@@ -113,10 +113,10 @@
       <div class="page">
         <section class="home-hero">
           <div class="home-hero-shield">🛡️</div>
-          <h1 class="home-hero-title">Система контроля соблюдения ТБ</h1>
+          <h1 class="home-hero-title">Инструктаж по охране труда для сотрудников</h1>
           <p class="home-hero-sub">
-            Чистый последовательный интерфейс на основе опубликованного релиза для командированных.
-            Дальше расширяем его под сотрудников и установки.
+            Последовательное обучение по подразделениям и установкам: общий модуль участка,
+            видео по оборудованию, карточки безопасной работы, тест и фиксация результата.
           </p>
           <div class="home-meta-bar">
             <span class="home-meta-chip">📱 Mobile-first</span>
@@ -126,125 +126,21 @@
         </section>
 
         <section class="role-grid">
-          <button class="role-card" id="guestBtn" type="button">
-            <div class="role-card-header">
-              <div class="role-card-icon">👤</div>
-              <div>
-                <div class="role-card-title">Командированный / посетитель</div>
-                <span class="role-card-tag">как в текущем релизе</span>
-              </div>
-            </div>
-            <p class="role-card-desc">Вводное видео, карточки требований, подтверждение прохождения и финальный ID.</p>
-          </button>
-
           <button class="role-card" id="employeeBtn" type="button">
             <div class="role-card-header">
               <div class="role-card-icon">⚙️</div>
               <div>
-                <div class="role-card-title">Сотрудник</div>
-                <span class="role-card-tag">новый модуль</span>
+                <div class="role-card-title">Начать обучение</div>
+                <span class="role-card-tag">сотрудник</span>
               </div>
             </div>
-            <p class="role-card-desc">Выбор подразделения, общий модуль участка, выбор установки, видео и тест.</p>
+            <p class="role-card-desc">Выбор подразделения, общий модуль участка, выбор установки, видео, карточки и тестирование.</p>
           </button>
         </section>
       </div>
     `;
 
-    document.getElementById('guestBtn').addEventListener('click', renderGuestStart);
     document.getElementById('employeeBtn').addEventListener('click', renderDepartments);
-    scrollTop();
-  }
-
-  function renderGuestStart() {
-    state.mode = 'guest';
-    setBreadcrumb([
-      { label: 'Главная', onClick: renderHome },
-      { label: 'Командированные' }
-    ]);
-
-    app.innerHTML = `
-      <div class="page">
-        <div class="page-head">
-          <div class="page-head-eyebrow">Командированные и посетители</div>
-          <div class="page-head-title">Вводный инструктаж</div>
-          <div class="page-head-sub">Этот раздел сохраняет логику уже опубликованного релиза: видео → карточки → подтверждение.</div>
-        </div>
-
-        ${renderStepper({ current: 1, total: 4, label: 'Шаг 1 из 4 — старт инструктажа' })}
-
-        <div class="slide-block">
-          <div class="slide-block-head">
-            <div class="slide-block-num">▶</div>
-            <div class="slide-block-title">Видеоинструктаж</div>
-          </div>
-          <div class="video-placeholder">
-            <div class="vp-icon">▶</div>
-            <div class="vp-title">Вводный видеоинструктаж</div>
-            <div class="vp-sub">Позже сюда можно перенести реальное видео из релиза defender.</div>
-            <button class="vp-play-btn" id="guestSlidesBtn" type="button">Перейти к карточкам</button>
-            <div class="vp-note">Пока это демонстрационный экран.</div>
-          </div>
-        </div>
-        <div class="page-bottom-spacer"></div>
-      </div>
-      <div class="sticky-bottom no-print">
-        <div class="sticky-bottom-inner">
-          <button class="btn btn-secondary" id="guestBackBtn" type="button">← Назад</button>
-          <button class="btn btn-primary btn-grow" id="guestNextBtn" type="button">К карточкам →</button>
-        </div>
-      </div>
-    `;
-
-    document.getElementById('guestBackBtn').addEventListener('click', renderHome);
-    document.getElementById('guestNextBtn').addEventListener('click', renderGuestSlides);
-    document.getElementById('guestSlidesBtn').addEventListener('click', renderGuestSlides);
-    scrollTop();
-  }
-
-  function renderGuestSlides() {
-    const slide = window.GUEST_INTRO?.[0];
-    setBreadcrumb([
-      { label: 'Главная', onClick: renderHome },
-      { label: 'Командированные', onClick: renderGuestStart },
-      { label: 'Карточки' }
-    ]);
-
-    app.innerHTML = `
-      <div class="page">
-        <div class="page-head">
-          <div class="page-head-eyebrow">Вводный инструктаж</div>
-          <div class="page-head-title">${esc(slide.title)}</div>
-        </div>
-        ${renderStepper({ current: 2, total: 4, label: 'Шаг 2 из 4 — карточки требований' })}
-        <div class="slide-block">
-          <div class="slide-block-head">
-            <div class="slide-block-num">1</div>
-            <div class="slide-block-title">${esc(slide.title)}</div>
-          </div>
-          <div class="slide-cards-grid">${slide.cards.map(renderSafetyCard).join('')}</div>
-          <div class="slide-footer">
-            <label class="confirm-row">
-              <input type="checkbox" class="confirm-check" id="guestConfirm" />
-              <span class="confirm-label">Ознакомлен с разделом</span>
-            </label>
-          </div>
-        </div>
-        <div class="page-bottom-spacer"></div>
-      </div>
-      <div class="sticky-bottom no-print">
-        <div class="sticky-bottom-inner">
-          <button class="btn btn-secondary" id="guestSlidesBack" type="button">← Видео</button>
-          <button class="btn btn-primary btn-grow" id="guestDoneBtn" type="button" disabled>Завершить →</button>
-        </div>
-      </div>
-    `;
-
-    const confirm = document.getElementById('guestConfirm');
-    const done = document.getElementById('guestDoneBtn');
-    confirm.addEventListener('change', () => { done.disabled = !confirm.checked; });
-    document.getElementById('guestSlidesBack').addEventListener('click', renderGuestStart);
-    done.addEventListener('click', renderDone);
     scrollTop();
   }
 
