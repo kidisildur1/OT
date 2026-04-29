@@ -111,61 +111,65 @@
 
     app.innerHTML = `
       <div class="page home-page">
-        <section class="home-intro-card">
-          <div class="home-intro-top">
-            <div class="home-hero-shield">🛡️</div>
-            <div class="home-intro-label">Цифровой инструктаж</div>
+        <section class="home-modern-hero">
+          <div class="home-hero-bg-mark">ТБ</div>
+          <div class="home-hero-topline">
+            <span class="home-status-dot"></span>
+            <span>Цифровой инструктаж сотрудников</span>
           </div>
-          <h1 class="home-hero-title">Охрана труда при работе на оборудовании</h1>
-          <p class="home-hero-sub">
-            Система помогает сотруднику пройти обучение по своему подразделению и конкретной установке:
-            от общих требований безопасности до особенностей работы на оборудовании.
-          </p>
+          <div class="home-hero-main">
+            <div class="home-hero-shield">🛡️</div>
+            <div class="home-hero-copy">
+              <h1 class="home-hero-title">Охрана труда при работе на оборудовании</h1>
+              <p class="home-hero-sub">
+                Последовательное обучение по подразделению и конкретной установке: общие требования,
+                видео по оборудованию, карточки рисков и итоговая фиксация результата.
+              </p>
+            </div>
+          </div>
+          <div class="home-quick-panel">
+            <div>
+              <span class="home-quick-label">Текущий этап</span>
+              <strong>Пилот: участок ЭИП ОМД</strong>
+            </div>
+            <div class="home-quick-icon">⚙️</div>
+          </div>
           <button class="btn btn-primary btn-full home-main-btn" id="employeeBtn" type="button">
             Начать обучение
           </button>
         </section>
 
-        <section class="home-section-card">
-          <div class="home-section-title">Как проходит обучение</div>
-          <div class="home-route-list">
-            <div class="home-route-item">
+        <section class="home-route-card">
+          <div class="home-section-title">Маршрут прохождения</div>
+          <div class="home-route-timeline">
+            <div class="home-route-step active">
               <span>1</span>
-              <div>
-                <strong>Выбор подразделения</strong>
-                <p>Сотрудник выбирает участок, сектор или лабораторию.</p>
-              </div>
+              <div><strong>Подразделение</strong><p>Выбор участка, сектора или лаборатории</p></div>
             </div>
-            <div class="home-route-item">
+            <div class="home-route-step">
               <span>2</span>
-              <div>
-                <strong>Общий модуль</strong>
-                <p>Повторяющиеся правила безопасности выносятся отдельно.</p>
-              </div>
+              <div><strong>Общий модуль</strong><p>Правила, которые повторяются для оборудования</p></div>
             </div>
-            <div class="home-route-item">
+            <div class="home-route-step">
               <span>3</span>
-              <div>
-                <strong>Установка и видео</strong>
-                <p>По каждому оборудованию будет вводное видео и карточки рисков.</p>
-              </div>
+              <div><strong>Установка</strong><p>Видео, опасные зоны и порядок работы</p></div>
             </div>
-            <div class="home-route-item">
+            <div class="home-route-step">
               <span>4</span>
-              <div>
-                <strong>Тест и фиксация</strong>
-                <p>Результат прохождения сохраняется в журнале.</p>
-              </div>
+              <div><strong>Результат</strong><p>Тестирование и запись в журнале</p></div>
             </div>
           </div>
         </section>
 
-        <section class="home-accent-card">
-          <div class="home-accent-icon">⚙️</div>
-          <div>
-            <div class="home-accent-title">Пилотный раздел — участок ЭИП ОМД</div>
-            <p>Сначала прорабатываем общий инструктаж участка и четыре установки: ЭУ-ПППТ, ST-ХПРТ, пресс и острильный станок.</p>
-          </div>
+        <section class="home-dashboard-grid">
+          <article class="home-mini-card">
+            <span>4</span>
+            <p>установки ОМД в пилоте</p>
+          </article>
+          <article class="home-mini-card">
+            <span>12</span>
+            <p>экранов общего модуля в плане</p>
+          </article>
         </section>
       </div>
     `;
