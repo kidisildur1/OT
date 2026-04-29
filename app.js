@@ -1,6 +1,9 @@
 (() => {
   'use strict';
 
+  const TRAINING_VALIDITY_MONTHS = 3;
+  const STORAGE_KEY = 'ot_training_records_v1';
+
   const state = {
     mode: 'home',
     commonSlide: 0,
@@ -38,6 +41,29 @@
 
   function pad(value) {
     return String(value).padStart(2, '0');
+  }
+
+  function formatDate(date) {
+    const d = new Date(date);
+    return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+  }
+
+  function addMonths(date, months) {
+    const d = new Date(date);
+    const day = d.getDate();
+    d.setMonth(d.getMonth() + months);
+    if (d.getDate() !== day) d.setDate(0);
+    return d;
+  }
+
+  function getEquipmentById(id) {
+    return window.OMD_EQUIPMENT.find((item) => item.id === id);
+  }
+
+  function saveTrainingRecord(record) {
+    const records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    records.unshift(record);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records.slice(0, 50)));
   }
 
   function updateDate() {
@@ -130,10 +156,10 @@
           </div>
           <div class="home-quick-panel">
             <div>
-              <span class="home-quick-label">Текущий этап</span>
-              <strong>Пилот: участок ЭИП ОМД</strong>
+              <span class="home-quick-label">Периодичность</span>
+              <strong>Повторное прохождение — раз в 3 месяца</strong>
             </div>
-            <div class="home-quick-icon">⚙️</div>
+            <div class="home-quick-icon">📅</div>
           </div>
           <button class="btn btn-primary btn-full home-main-btn" id="employeeBtn" type="button">
             Начать обучение
@@ -157,7 +183,7 @@
             </div>
             <div class="home-route-step">
               <span>4</span>
-              <div><strong>Результат</strong><p>Тестирование и запись в журнале</p></div>
+              <div><strong>Результат</strong><p>Фиксация даты прохождения и срока действия 3 месяца</p></div>
             </div>
           </div>
         </section>
@@ -168,8 +194,8 @@
             <p>установки ОМД в пилоте</p>
           </article>
           <article class="home-mini-card">
-            <span>12</span>
-            <p>экранов общего модуля в плане</p>
+            <span>3</span>
+            <p>месяца действует обучение</p>
           </article>
         </section>
       </div>
@@ -322,6 +348,7 @@
             <div class="list-card-meta">
               <span class="badge badge-blue">${esc(equipment.instruction)}</span>
               <span class="badge badge-gray">видео позже</span>
+              <span class="badge badge-green">срок 3 месяца</span>
             </div>
           </div>
         </div>
@@ -333,7 +360,7 @@
         <div class="page-head">
           <div class="page-head-eyebrow">Участок ЭИП ОМД</div>
           <div class="page-head-title">Выберите установку</div>
-          <div class="page-head-sub">Каждый модуль установки начнётся с вводного видео. Пока экран видео оставлен как placeholder.</div>
+          <div class="page-head-sub">Каждый модуль установки начнётся с вводного видео. После прохождения обучение действует 3 месяца.</div>
         </div>
         <div class="list-stack">${items}</div>
         <div class="page-bottom-spacer"></div>
@@ -347,7 +374,7 @@
   }
 
   function renderEquipmentVideo(id) {
-    const equipment = window.OMD_EQUIPMENT.find((item) => item.id === id);
+    const equipment = getEquipmentById(id);
     state.selectedEquipmentId = id;
     state.equipmentSlide = 0;
     const total = (equipment.slides?.length || 0) + 2;
@@ -397,7 +424,7 @@
   }
 
   function renderEquipmentSlide(id, index = 0) {
-    const equipment = window.OMD_EQUIPMENT.find((item) => item.id === id);
+    const equipment = getEquipmentById(id);
     const slides = equipment.slides || [];
     const slide = slides[index];
     const total = slides.length + 2;
@@ -458,6 +485,23 @@
   }
 
   function renderDone() {
+    const completedAt = new Date();
+    const validUntil = addMonths(completedAt, TRAINING_VALIDITY_MONTHS);
+    const equipment = state.selectedEquipmentId ? getEquipmentById(state.selectedEquipmentId) : null;
+
+    const record = {
+      id: `OT-${Date.now()}`,
+      completedAt: completedAt.toISOString(),
+      validUntil: validUntil.toISOString(),
+      validityMonths: TRAINING_VALIDITY_MONTHS,
+      department: 'Участок ЭИП ОМД',
+      equipmentId: equipment?.id || null,
+      equipmentName: equipment?.name || 'Не выбрана',
+      instruction: equipment?.instruction || '',
+      status: 'valid'
+    };
+    saveTrainingRecord(record);
+
     setBreadcrumb([
       { label: 'Главная', onClick: renderHome },
       { label: 'Завершено' }
@@ -468,13 +512,17 @@
         <div class="done-hero">
           <div class="done-hero-ring">✓</div>
           <div class="done-hero-title">Модуль завершён</div>
-          <div class="done-hero-sub">Результат пока фиксируется как демонстрационный. На следующем этапе подключим тест и журнал.</div>
+          <div class="done-hero-sub">Обучение действительно 3 месяца. Повторное прохождение нужно до ${formatDate(validUntil)}.</div>
         </div>
         <div class="receipt-card">
-          <div class="receipt-row"><span class="receipt-key">Статус</span><span class="receipt-val">Пройдено</span></div>
-          <div class="receipt-row"><span class="receipt-key">Формат</span><span class="receipt-val">Видео → карточки → подтверждение</span></div>
-          <div class="receipt-row"><span class="receipt-key">Следующий этап</span><span class="receipt-val">Добавить тестирование и журнал прохождения</span></div>
+          <div class="receipt-row"><span class="receipt-key">Статус</span><span class="receipt-val">Действует</span></div>
+          <div class="receipt-row"><span class="receipt-key">Установка</span><span class="receipt-val">${esc(record.equipmentName)}</span></div>
+          <div class="receipt-row"><span class="receipt-key">Дата прохождения</span><span class="receipt-val">${formatDate(completedAt)}</span></div>
+          <div class="receipt-row"><span class="receipt-key">Действует до</span><span class="receipt-val">${formatDate(validUntil)}</span></div>
+          <div class="receipt-row"><span class="receipt-key">Периодичность</span><span class="receipt-val">1 раз в 3 месяца</span></div>
+          <div class="receipt-row"><span class="receipt-key">Журнал</span><span class="receipt-val">Запись сохранена локально</span></div>
         </div>
+        <div class="info-box">На следующем этапе добавим ввод ФИО сотрудника и отправку записи в Google Sheets / журнал прохождения.</div>
         <div class="page-bottom-spacer"></div>
       </div>
       <div class="sticky-bottom no-print">
