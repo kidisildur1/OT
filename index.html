@@ -12,7 +12,7 @@
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar" aria-label="Шапка приложения">
+    <header class="topbar">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">ТБ</div>
         <div>
@@ -20,88 +20,36 @@
           <h1>Система контроля соблюдения ТБ</h1>
         </div>
       </div>
-      <div class="status-pill" aria-label="Статус системы">
+      <div class="status-pill">
         <span class="status-dot"></span>
-        Система работает
+        Онлайн
       </div>
     </header>
 
-    <main>
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-content">
-          <div class="hero-badges" aria-label="Ключевые особенности">
-            <span>Mobile-first</span>
-            <span>GitHub Pages</span>
-            <span>Telegram WebApp</span>
-          </div>
-
-          <h2 id="hero-title">Цифровой инструктаж по охране труда</h2>
-          <p class="hero-text">
-            Единый маршрут обучения: общий инструктаж, выбор подразделения, выбор установки,
-            видео по оборудованию, проверка знаний и фиксация результата.
-          </p>
-
-          <div class="hero-actions">
-            <button class="primary-button" type="button" data-scroll-to="architecture">
-              Начать инструктаж
-            </button>
-            <button class="secondary-button" type="button" data-scroll-to="route">
-              Посмотреть структуру
-            </button>
-          </div>
+    <main class="learning-shell" aria-live="polite">
+      <section class="progress-card" aria-label="Прогресс прохождения">
+        <div class="progress-meta">
+          <span id="stepLabel">Шаг 1 из 7</span>
+          <strong id="stepPercent">14%</strong>
         </div>
-
-        <div class="hero-panel" aria-label="Прогресс прохождения">
-          <div class="panel-header">
-            <span>Маршрут сотрудника</span>
-            <strong>0 / 6</strong>
-          </div>
-          <div class="progress-track" aria-hidden="true">
-            <span style="width: 8%"></span>
-          </div>
-          <div class="mobile-preview-list">
-            <div class="preview-item active">Общий инструктаж</div>
-            <div class="preview-item">Подразделение</div>
-            <div class="preview-item">Установка</div>
-            <div class="preview-item">Видео</div>
-            <div class="preview-item">Тест</div>
-            <div class="preview-item">Журнал</div>
-          </div>
+        <div class="progress-track" aria-hidden="true">
+          <span id="progressFill"></span>
         </div>
       </section>
 
-      <section id="route" class="section" aria-labelledby="route-title">
-        <div class="section-heading">
-          <p class="eyebrow">Общая архитектура</p>
-          <h2 id="route-title">Путь пользователя</h2>
-          <p>
-            Делаем не набор длинных инструкций, а понятный пошаговый маршрут, который удобно проходить с телефона.
-          </p>
-        </div>
-
-        <div class="route-grid" id="architecture"></div>
+      <section class="screen-card" id="screenCard">
+        <div class="screen-icon" id="screenIcon" aria-hidden="true">🛡️</div>
+        <p class="eyebrow" id="screenKicker">Старт</p>
+        <h2 id="screenTitle">Цифровой инструктаж по охране труда</h2>
+        <p class="screen-text" id="screenText"></p>
+        <div class="screen-list" id="screenList"></div>
+        <div class="notice" id="screenNotice"></div>
       </section>
 
-      <section class="section" aria-labelledby="modules-title">
-        <div class="section-heading">
-          <p class="eyebrow">Модули приложения</p>
-          <h2 id="modules-title">Что будет внутри</h2>
-        </div>
-
-        <div class="module-grid" id="modules"></div>
-      </section>
-
-      <section class="next-step" aria-labelledby="next-title">
-        <div>
-          <p class="eyebrow">Следующий этап</p>
-          <h2 id="next-title">Участок ЭИП ОМД</h2>
-          <p>
-            На следующем шаге добавим подробный общий инструктаж участка ОМД: 12 экранов,
-            чек-листы, опасные зоны, запреты, аварийные ситуации и мини-тест.
-          </p>
-        </div>
-        <button class="primary-button" type="button" data-scroll-to="route">Вернуться к маршруту</button>
-      </section>
+      <nav class="bottom-nav" aria-label="Навигация по обучению">
+        <button class="secondary-button" id="prevBtn" type="button">Назад</button>
+        <button class="primary-button" id="nextBtn" type="button">Далее</button>
+      </nav>
     </main>
   </div>
 
