@@ -2,57 +2,52 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#07111f" />
-  <title>Система контроля соблюдения ТБ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="description" content="ИЦ ТМК / РусНИТИ — цифровая система инструктажа по охране труда для сотрудников, командированных и посетителей." />
+  <meta name="theme-color" content="#E8500A" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>Система контроля соблюдения ТБ — ИЦ ТМК / РусНИТИ</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app-shell">
-    <header class="topbar">
-      <div class="brand">
-        <div class="brand-mark" aria-hidden="true">ТБ</div>
-        <div>
-          <p class="eyebrow">ИЦ ТМК / РусНИТИ</p>
-          <h1>Система контроля соблюдения ТБ</h1>
+  <header class="top-bar no-print">
+    <div class="top-bar-inner">
+      <div class="top-bar-brand">
+        <div class="top-bar-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+        </div>
+        <div class="top-bar-text">
+          <div class="top-bar-title">ИЦ ТМК / РусНИТИ</div>
+          <div class="top-bar-sub">Система контроля соблюдения ТБ</div>
         </div>
       </div>
-      <div class="status-pill">
-        <span class="status-dot"></span>
-        Онлайн
+      <div class="top-bar-right">
+        <span class="role-pill" id="roleBadge">MVP</span>
+        <span class="dt-chip" id="dtLabel"></span>
       </div>
-    </header>
+    </div>
+  </header>
 
-    <main class="learning-shell" aria-live="polite">
-      <section class="progress-card" aria-label="Прогресс прохождения">
-        <div class="progress-meta">
-          <span id="stepLabel">Шаг 1 из 7</span>
-          <strong id="stepPercent">14%</strong>
-        </div>
-        <div class="progress-track" aria-hidden="true">
-          <span id="progressFill"></span>
-        </div>
-      </section>
+  <nav class="breadcrumb-bar no-print hidden" id="breadcrumbBar">
+    <div class="breadcrumb-inner" id="breadcrumbInner"></div>
+  </nav>
 
-      <section class="screen-card" id="screenCard">
-        <div class="screen-icon" id="screenIcon" aria-hidden="true">🛡️</div>
-        <p class="eyebrow" id="screenKicker">Старт</p>
-        <h2 id="screenTitle">Цифровой инструктаж по охране труда</h2>
-        <p class="screen-text" id="screenText"></p>
-        <div class="screen-list" id="screenList"></div>
-        <div class="notice" id="screenNotice"></div>
-      </section>
+  <main id="app">
+    <div class="loader-wrap">
+      <div class="loader-ring"></div>
+    </div>
+  </main>
 
-      <nav class="bottom-nav" aria-label="Навигация по обучению">
-        <button class="secondary-button" id="prevBtn" type="button">Назад</button>
-        <button class="primary-button" id="nextBtn" type="button">Далее</button>
-      </nav>
-    </main>
-  </div>
-
+  <script src="data/guestIntro.js"></script>
+  <script src="data/departments.js"></script>
+  <script src="data/omdCommon.js"></script>
+  <script src="data/omdEquipment.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
