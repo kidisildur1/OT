@@ -2,11 +2,13 @@
   'use strict';
 
   const TRAINING_VALIDITY_MONTHS = 3;
+  const GUEST_VALIDITY_DAYS = 1;
   const STORAGE_KEY = 'ot_training_records_v1';
 
   const state = {
     mode: 'home',
     commonSlide: 0,
+    guestSlide: 0,
     selectedEquipmentId: null,
     equipmentSlide: 0,
     employee: {
@@ -50,6 +52,7 @@
 
   function formatDate(date) {
     const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return 'не указана';
     return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
   }
 
@@ -61,18 +64,34 @@
     return d;
   }
 
+  function addDays(date, days) {
+    const d = new Date(date);
+    d.setDate(d.getDate() + days);
+    return d;
+  }
+
   function getEquipmentById(id) {
     return window.OMD_EQUIPMENT.find((item) => item.id === id);
   }
 
   function getTrainingRecords() {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    try {
+      const records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      return Array.isArray(records) ? records : [];
+    } catch (error) {
+      console.warn('Не удалось прочитать локальный журнал', error);
+      return [];
+    }
   }
 
   function saveTrainingRecord(record) {
     const records = getTrainingRecords();
     records.unshift(record);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(records.slice(0, 50)));
+  }
+
+  function clearTrainingRecords() {
+    localStorage.removeItem(STORAGE_KEY);
   }
 
   function updateDate() {
@@ -175,6 +194,9 @@
           <button class="btn btn-primary btn-full home-main-btn" id="employeeBtn" type="button">
             Начать обучение
           </button>
+          <button class="btn btn-secondary btn-full mt-12" id="guestBtn" type="button">
+            Вводный инструктаж для посетителей
+          </button>
           <button class="btn btn-secondary btn-full mt-12" id="journalBtn" type="button">
             Журнал прохождения${recordsCount ? ` · ${recordsCount}` : ''}
           </button>
@@ -216,6 +238,7 @@
     `;
 
     document.getElementById('employeeBtn').addEventListener('click', renderEmployeeForm);
+    document.getElementById('guestBtn').addEventListener('click', renderGuestForm);
     document.getElementById('journalBtn').addEventListener('click', renderJournal);
     scrollTop();
   }
@@ -285,6 +308,71 @@
     scrollTop();
   }
 
+  function renderGuestForm() {
+    state.mode = 'guest-form';
+    setBreadcrumb([
+      { label: 'Главная', onClick: renderHome },
+      { label: 'Вводный инструктаж' }
+    ]);
+
+    app.innerHTML = `
+      <div class="page">
+        <div class="page-head">
+          <div class="page-head-eyebrow">Командированные и посетители</div>
+          <div class="page-head-title">Кто проходит вводный инструктаж?</div>
+          <div class="page-head-sub">Введите данные посетителя или командированного сотрудника. Запись будет сохранена в локальном журнале.</div>
+        </div>
+
+        <div class="form-block">
+          <div class="form-block-title">Данные участника</div>
+          <div class="form-group">
+            <label class="form-label" for="guestName">ФИО <span class="req">*</span></label>
+            <input class="form-input" id="guestName" type="text" placeholder="Например: Иванов Иван Иванович" autocomplete="name" value="${esc(state.employee.fullName)}" />
+            <div class="form-hint" id="guestNameHint">Обязательное поле для записи в журнал.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="guestNumber">Организация / табельный номер</label>
+            <input class="form-input" id="guestNumber" type="text" placeholder="Можно оставить пустым" value="${esc(state.employee.personnelNumber)}" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="guestPosition">Должность / цель посещения</label>
+            <input class="form-input" id="guestPosition" type="text" placeholder="Например: представитель подрядчика" value="${esc(state.employee.position)}" />
+          </div>
+        </div>
+
+        <div class="info-box">Вводный инструктаж нужен перед нахождением на территории и в производственных помещениях.</div>
+        <div class="page-bottom-spacer"></div>
+      </div>
+      <div class="sticky-bottom no-print">
+        <div class="sticky-bottom-inner">
+          <button class="btn btn-secondary" id="guestFormBack" type="button">← Назад</button>
+          <button class="btn btn-primary btn-grow" id="guestFormNext" type="button">Продолжить →</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('guestFormBack').addEventListener('click', renderHome);
+    document.getElementById('guestFormNext').addEventListener('click', () => {
+      const nameInput = document.getElementById('guestName');
+      const hint = document.getElementById('guestNameHint');
+      const fullName = nameInput.value.trim();
+
+      if (!fullName) {
+        nameInput.classList.add('err');
+        hint.classList.add('err');
+        hint.textContent = 'Введите ФИО участника инструктажа.';
+        nameInput.focus();
+        return;
+      }
+
+      state.employee.fullName = fullName;
+      state.employee.personnelNumber = document.getElementById('guestNumber').value.trim();
+      state.employee.position = document.getElementById('guestPosition').value.trim();
+      renderGuestIntro(0);
+    });
+    scrollTop();
+  }
+
   function renderJournal() {
     const records = getTrainingRecords();
     setBreadcrumb([
@@ -293,13 +381,15 @@
     ]);
 
     const content = records.length ? records.map((record) => {
-      const expired = new Date(record.validUntil) < new Date();
+      const isGuestRecord = record.moduleType === 'guest' || record.equipmentId === 'guest-intro';
+      const expired = record.validUntil ? new Date(record.validUntil) < new Date() : false;
       return `
         <div class="receipt-card">
           <div class="receipt-row"><span class="receipt-key">Сотрудник</span><span class="receipt-val">${esc(record.employeeName || 'Не указан')}</span></div>
-          <div class="receipt-row"><span class="receipt-key">Установка</span><span class="receipt-val">${esc(record.equipmentName || 'Не выбрана')}</span></div>
+          <div class="receipt-row"><span class="receipt-key">${isGuestRecord ? 'Инструктаж' : 'Установка'}</span><span class="receipt-val">${esc(record.equipmentName || 'Не выбрана')}</span></div>
           <div class="receipt-row"><span class="receipt-key">Пройдено</span><span class="receipt-val">${formatDate(record.completedAt)}</span></div>
           <div class="receipt-row"><span class="receipt-key">Действует до</span><span class="receipt-val">${formatDate(record.validUntil)}</span></div>
+          <div class="receipt-row"><span class="receipt-key">Срок</span><span class="receipt-val">${esc(record.validityLabel || `${record.validityMonths || TRAINING_VALIDITY_MONTHS} месяца`)}</span></div>
           <div class="receipt-row"><span class="receipt-key">Статус</span><span class="receipt-val">${expired ? 'Требуется повторить' : 'Действует'}</span></div>
         </div>
       `;
@@ -307,12 +397,13 @@
 
     app.innerHTML = `
       <div class="page">
-        <div class="page-head">
-          <div class="page-head-eyebrow">Журнал прохождения</div>
-          <div class="page-head-title">Кто прошёл инструктаж</div>
-          <div class="page-head-sub">Здесь отображаются локально сохраненные записи. Обучение действует 3 месяца.</div>
+          <div class="page-head">
+            <div class="page-head-eyebrow">Журнал прохождения</div>
+            <div class="page-head-title">Кто прошёл инструктаж</div>
+          <div class="page-head-sub">Здесь отображаются локально сохраненные записи. Для сотрудников обучение действует 3 месяца, вводный инструктаж посетителей фиксируется отдельно.</div>
         </div>
         ${content}
+        ${records.length ? '<button class="btn btn-secondary btn-full mt-16" id="journalClear" type="button">Очистить локальный журнал</button>' : ''}
         <div class="page-bottom-spacer"></div>
       </div>
       <div class="sticky-bottom no-print">
@@ -325,6 +416,77 @@
 
     document.getElementById('journalBack').addEventListener('click', renderHome);
     document.getElementById('journalStart').addEventListener('click', renderEmployeeForm);
+    const clearBtn = document.getElementById('journalClear');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        if (!window.confirm('Удалить все локальные записи журнала?')) return;
+        clearTrainingRecords();
+        renderJournal();
+      });
+    }
+    scrollTop();
+  }
+
+  function renderGuestIntro(index = 0) {
+    state.mode = 'guest-intro';
+    state.guestSlide = index;
+    const slides = window.GUEST_INTRO || [];
+    const slide = slides[index];
+    const total = slides.length;
+
+    if (!slide) {
+      renderDone({ type: 'guest' });
+      return;
+    }
+
+    setBreadcrumb([
+      { label: 'Главная', onClick: renderHome },
+      { label: 'Вводный инструктаж', onClick: renderGuestForm },
+      { label: `Раздел ${index + 1}` }
+    ]);
+
+    app.innerHTML = `
+      <div class="page">
+        <div class="page-head">
+          <div class="page-head-eyebrow">Посетитель: ${esc(state.employee.fullName || 'не указан')}</div>
+          <div class="page-head-title">${esc(slide.title)}</div>
+          <div class="page-head-sub">Ключевые правила нахождения на территории, движения по маршрутам и запрета самостоятельного управления оборудованием.</div>
+        </div>
+        ${renderStepper({ current: index + 1, total, label: `Раздел ${index + 1} из ${total}` })}
+        <div class="slide-block">
+          <div class="slide-block-head">
+            <div class="slide-block-num">${index + 1}</div>
+            <div class="slide-block-title">${esc(slide.title)}</div>
+          </div>
+          <div class="slide-cards-grid">${slide.cards.map(renderSafetyCard).join('')}</div>
+          <div class="slide-footer">
+            <label class="confirm-row">
+              <input type="checkbox" class="confirm-check" id="guestConfirm" />
+              <span class="confirm-label">Ознакомлен с разделом</span>
+            </label>
+          </div>
+        </div>
+        <div class="page-bottom-spacer"></div>
+      </div>
+      <div class="sticky-bottom no-print">
+        <div class="sticky-bottom-inner">
+          <button class="btn btn-secondary" id="guestBack" type="button">← Назад</button>
+          <button class="btn btn-primary btn-grow" id="guestNext" type="button" disabled>${index < total - 1 ? 'Следующий раздел →' : 'Завершить →'}</button>
+        </div>
+      </div>
+    `;
+
+    const confirm = document.getElementById('guestConfirm');
+    const next = document.getElementById('guestNext');
+    confirm.addEventListener('change', () => { next.disabled = !confirm.checked; });
+    document.getElementById('guestBack').addEventListener('click', () => {
+      if (index > 0) renderGuestIntro(index - 1);
+      else renderGuestForm();
+    });
+    next.addEventListener('click', () => {
+      if (index < total - 1) renderGuestIntro(index + 1);
+      else renderDone({ type: 'guest' });
+    });
     scrollTop();
   }
 
@@ -607,23 +769,26 @@
     scrollTop();
   }
 
-  function renderDone() {
+  function renderDone(options = {}) {
     const completedAt = new Date();
-    const validUntil = addMonths(completedAt, TRAINING_VALIDITY_MONTHS);
+    const isGuest = options.type === 'guest';
+    const validUntil = isGuest ? addDays(completedAt, GUEST_VALIDITY_DAYS) : addMonths(completedAt, TRAINING_VALIDITY_MONTHS);
     const equipment = state.selectedEquipmentId ? getEquipmentById(state.selectedEquipmentId) : null;
 
     const record = {
-      id: `OT-${Date.now()}`,
+      id: `${isGuest ? 'GUEST' : 'OT'}-${Date.now()}`,
       employeeName: state.employee.fullName || 'Не указан',
       personnelNumber: state.employee.personnelNumber || '',
       position: state.employee.position || '',
       completedAt: completedAt.toISOString(),
       validUntil: validUntil.toISOString(),
-      validityMonths: TRAINING_VALIDITY_MONTHS,
-      department: 'Участок ЭИП ОМД',
-      equipmentId: equipment?.id || null,
-      equipmentName: equipment?.name || 'Не выбрана',
-      instruction: equipment?.instruction || '',
+      validityMonths: isGuest ? 0 : TRAINING_VALIDITY_MONTHS,
+      validityLabel: isGuest ? 'на срок посещения' : `${TRAINING_VALIDITY_MONTHS} месяца`,
+      moduleType: isGuest ? 'guest' : 'equipment',
+      department: isGuest ? 'Командированные и посетители' : 'Участок ЭИП ОМД',
+      equipmentId: isGuest ? 'guest-intro' : equipment?.id || null,
+      equipmentName: isGuest ? 'Вводный инструктаж' : equipment?.name || 'Не выбрана',
+      instruction: isGuest ? 'Вводный инструктаж' : equipment?.instruction || '',
       status: 'valid'
     };
     saveTrainingRecord(record);
@@ -637,17 +802,17 @@
       <div class="page">
         <div class="done-hero">
           <div class="done-hero-ring">✓</div>
-          <div class="done-hero-title">Модуль завершён</div>
-          <div class="done-hero-sub">Обучение действительно 3 месяца. Повторное прохождение нужно до ${formatDate(validUntil)}.</div>
+          <div class="done-hero-title">${isGuest ? 'Вводный инструктаж завершён' : 'Модуль завершён'}</div>
+          <div class="done-hero-sub">${isGuest ? `Запись сохранена в журнале. Инструктаж действует до ${formatDate(validUntil)}.` : `Обучение действительно 3 месяца. Повторное прохождение нужно до ${formatDate(validUntil)}.`}</div>
         </div>
         <div class="receipt-card">
           <div class="receipt-row"><span class="receipt-key">Сотрудник</span><span class="receipt-val">${esc(record.employeeName)}</span></div>
           <div class="receipt-row"><span class="receipt-key">Табельный №</span><span class="receipt-val">${esc(record.personnelNumber || 'не указан')}</span></div>
           <div class="receipt-row"><span class="receipt-key">Статус</span><span class="receipt-val">Действует</span></div>
-          <div class="receipt-row"><span class="receipt-key">Установка</span><span class="receipt-val">${esc(record.equipmentName)}</span></div>
+          <div class="receipt-row"><span class="receipt-key">${isGuest ? 'Инструктаж' : 'Установка'}</span><span class="receipt-val">${esc(record.equipmentName)}</span></div>
           <div class="receipt-row"><span class="receipt-key">Дата прохождения</span><span class="receipt-val">${formatDate(completedAt)}</span></div>
           <div class="receipt-row"><span class="receipt-key">Действует до</span><span class="receipt-val">${formatDate(validUntil)}</span></div>
-          <div class="receipt-row"><span class="receipt-key">Периодичность</span><span class="receipt-val">1 раз в 3 месяца</span></div>
+          <div class="receipt-row"><span class="receipt-key">Периодичность</span><span class="receipt-val">${isGuest ? 'на срок посещения' : '1 раз в 3 месяца'}</span></div>
           <div class="receipt-row"><span class="receipt-key">Журнал</span><span class="receipt-val">Запись сохранена локально</span></div>
         </div>
         <div class="info-box">Позже эту запись можно будет автоматически отправлять в Google Sheets / общий журнал прохождения.</div>
