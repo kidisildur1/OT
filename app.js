@@ -11,6 +11,7 @@
     guestSlide: 0,
     selectedEquipmentId: null,
     equipmentSlide: 0,
+    knowledgeAnswers: {},
     employee: {
       fullName: '',
       personnelNumber: '',
@@ -138,6 +139,178 @@
         <div class="safety-card-badge ${type.cls}-badge">${type.label}</div>
       </article>
     `;
+  }
+
+  function cardsByType(slide, type) {
+    return (slide.cards || []).filter((card) => card.type === type);
+  }
+
+  function firstCard(slide, types) {
+    return types.map((type) => cardsByType(slide, type)[0]).find(Boolean) || (slide.cards || [])[0];
+  }
+
+  function summaryText(card) {
+    if (!card) return '';
+    return card.sub || card.title || '';
+  }
+
+  function renderSummaryPill(tone, label, card, fallback) {
+    const title = card?.title || fallback;
+    const text = summaryText(card) || fallback;
+    return `
+      <article class="slide-summary-pill ${tone}">
+        <span>${esc(label)}</span>
+        <strong>${esc(title)}</strong>
+        <p>${esc(text)}</p>
+      </article>
+    `;
+  }
+
+  function renderActionPath(slide) {
+    const hasPpe = (slide.cards || []).some((card) => `${card.title} ${card.sub}`.toLowerCase().includes('сиз'));
+    const hasElectric = (slide.cards || []).some((card) => `${card.title} ${card.sub}`.toLowerCase().includes('элект'));
+    const firstStep = hasPpe ? 'Надень СИЗ' : hasElectric ? 'Проверь питание' : 'Проверь условия';
+    const secondStep = firstCard(slide, ['rule', 'ok'])?.title || 'Действуй по заданию';
+    const thirdStep = firstCard(slide, ['ban', 'warn']) ? 'Стоп при отклонениях' : 'Сообщи замечания';
+
+    return `
+      <div class="slide-action-path" aria-label="Порядок действий">
+        <span><b>1</b>${esc(firstStep)}</span>
+        <span><b>2</b>${esc(secondStep)}</span>
+        <span><b>3</b>${esc(thirdStep)}</span>
+      </div>
+    `;
+  }
+
+  function renderSlideSummary(slide) {
+    const required = firstCard(slide, ['rule', 'ok']);
+    const forbidden = firstCard(slide, ['ban']);
+    const risk = firstCard(slide, ['warn']);
+
+    return `
+      <section class="slide-summary-grid" aria-label="Краткий итог раздела">
+        ${renderSummaryPill('must', 'Обязательно', required, 'Выполнять только по правилам раздела')}
+        ${renderSummaryPill('risk', 'Риск', risk || forbidden, 'Остановиться при опасной ситуации')}
+        ${renderSummaryPill('ban', 'Запрещено', forbidden, 'Не выполнять опасные действия')}
+      </section>
+      ${renderActionPath(slide)}
+    `;
+  }
+
+  function buildKnowledgeCheck(slide) {
+    if (slide.check) return slide.check;
+
+    const forbidden = firstCard(slide, ['ban']);
+    if (forbidden) {
+      return {
+        question: 'Какое действие здесь недопустимо?',
+        options: [
+          `Не выполнять: ${forbidden.title}. ${forbidden.sub}`,
+          'Продолжить работу без проверки зоны',
+          'Снять СИЗ для удобства',
+          'Не сообщать руководителю о риске'
+        ],
+        answer: 0,
+        feedback: 'Запрещенные действия останавливают работу до устранения риска.'
+      };
+    }
+
+    const risk = firstCard(slide, ['warn']);
+    if (risk) {
+      return {
+        question: 'Что нужно сделать при таком риске?',
+        options: [
+          `Остановиться и учесть риск: ${risk.title}. ${risk.sub}`,
+          'Ускорить операцию',
+          'Передать управление посетителю',
+          'Игнорировать предупреждение'
+        ],
+        answer: 0,
+        feedback: 'Риск требует контроля, безопасной дистанции и сообщения ответственному при отклонениях.'
+      };
+    }
+
+    const required = firstCard(slide, ['rule', 'ok']);
+    return {
+      question: 'Какой главный акцент раздела?',
+      options: [
+        `Выполнить: ${required?.title || 'правило раздела'}. ${required?.sub || 'Следовать требованиям раздела'}`,
+        'Начать работу без задания',
+        'Пропустить проверку перед запуском',
+        'Войти в опасную зону без разрешения'
+      ],
+      answer: 0,
+      feedback: 'Главное правило нужно выполнить до перехода к следующему шагу.'
+    };
+  }
+
+  function renderKnowledgeCheck(slide, checkKey) {
+    const check = buildKnowledgeCheck(slide);
+    const selected = state.knowledgeAnswers[checkKey];
+    const correctText = check.options[check.answer] || '';
+    const answered = selected !== undefined;
+
+    return `
+      <section class="knowledge-check ${answered ? 'answered' : ''}" data-check-key="${esc(checkKey)}" data-answer="${check.answer}" data-feedback="${esc(check.feedback)}" data-correct-text="${esc(correctText)}">
+        <div class="knowledge-check-head">
+          <span class="badge badge-blue">Проверка знаний</span>
+          <strong>${esc(check.question)}</strong>
+        </div>
+        <div class="knowledge-options">
+          ${check.options.map((option, index) => `
+            <button class="knowledge-option ${selected === index ? 'selected' : ''} ${answered && index === check.answer ? 'right' : ''} ${selected === index && index !== check.answer ? 'wrong' : ''}" type="button" data-check-value="${index}">
+              ${esc(option)}
+            </button>
+          `).join('')}
+        </div>
+        <p class="knowledge-feedback" data-check-feedback ${answered ? '' : 'hidden'}>
+          ${answered ? esc(selected === check.answer ? check.feedback : `Верный акцент: ${correctText}. ${check.feedback}`) : ''}
+        </p>
+      </section>
+    `;
+  }
+
+  function updateSlideNext(confirm, next, checkKey) {
+    next.disabled = !confirm.checked || state.knowledgeAnswers[checkKey] === undefined;
+  }
+
+  function bindKnowledgeCheck(section, checkKey, syncNext) {
+    if (!section) return;
+    const answer = Number(section.dataset.answer);
+    const feedback = section.dataset.feedback || '';
+    const correctText = section.dataset.correctText || '';
+    const feedbackNode = section.querySelector('[data-check-feedback]');
+
+    section.querySelectorAll('[data-check-value]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const value = Number(button.dataset.checkValue);
+        state.knowledgeAnswers[checkKey] = value;
+        section.classList.add('answered');
+
+        section.querySelectorAll('[data-check-value]').forEach((item) => {
+          const itemValue = Number(item.dataset.checkValue);
+          item.classList.toggle('selected', itemValue === value);
+          item.classList.toggle('right', itemValue === answer);
+          item.classList.toggle('wrong', itemValue === value && value !== answer);
+        });
+
+        feedbackNode.hidden = false;
+        feedbackNode.textContent = value === answer ? feedback : `Верный акцент: ${correctText}. ${feedback}`;
+        syncNext();
+      });
+    });
+  }
+
+  function bindSlideControls({ confirmId, nextId, checkKey }) {
+    const confirm = document.getElementById(confirmId);
+    const next = document.getElementById(nextId);
+    const syncNext = () => updateSlideNext(confirm, next, checkKey);
+
+    confirm.addEventListener('change', syncNext);
+    bindKnowledgeCheck(app.querySelector(`[data-check-key="${checkKey}"]`), checkKey, syncNext);
+    syncNext();
+
+    return { confirm, next };
   }
 
   function renderStepper({ current, total, label }) {
@@ -433,6 +606,7 @@
     const slides = window.GUEST_INTRO || [];
     const slide = slides[index];
     const total = slides.length;
+    const checkKey = `guest:${index}`;
 
     if (!slide) {
       renderDone({ type: 'guest' });
@@ -458,11 +632,13 @@
             <div class="slide-block-num">${index + 1}</div>
             <div class="slide-block-title">${esc(slide.title)}</div>
           </div>
+          ${renderSlideSummary(slide)}
           <div class="slide-cards-grid">${slide.cards.map(renderSafetyCard).join('')}</div>
+          ${renderKnowledgeCheck(slide, checkKey)}
           <div class="slide-footer">
             <label class="confirm-row">
               <input type="checkbox" class="confirm-check" id="guestConfirm" />
-              <span class="confirm-label">Ознакомлен с разделом</span>
+              <span class="confirm-label">Понял правила раздела</span>
             </label>
           </div>
         </div>
@@ -476,9 +652,7 @@
       </div>
     `;
 
-    const confirm = document.getElementById('guestConfirm');
-    const next = document.getElementById('guestNext');
-    confirm.addEventListener('change', () => { next.disabled = !confirm.checked; });
+    const { next } = bindSlideControls({ confirmId: 'guestConfirm', nextId: 'guestNext', checkKey });
     document.getElementById('guestBack').addEventListener('click', () => {
       if (index > 0) renderGuestIntro(index - 1);
       else renderGuestForm();
@@ -562,6 +736,7 @@
     const module = window.OMD_COMMON;
     const slide = module.slides[index];
     const total = module.slides.length;
+    const checkKey = `omd:${index}`;
 
     setBreadcrumb([
       { label: 'Главная', onClick: renderHome },
@@ -583,11 +758,13 @@
             <div class="slide-block-num">${index + 1}</div>
             <div class="slide-block-title">${esc(slide.title)}</div>
           </div>
+          ${renderSlideSummary(slide)}
           <div class="slide-cards-grid">${slide.cards.map(renderSafetyCard).join('')}</div>
+          ${renderKnowledgeCheck(slide, checkKey)}
           <div class="slide-footer">
             <label class="confirm-row">
               <input type="checkbox" class="confirm-check" id="omdConfirm" />
-              <span class="confirm-label">Ознакомлен с разделом</span>
+              <span class="confirm-label">Понял правила раздела</span>
             </label>
           </div>
         </div>
@@ -601,9 +778,7 @@
       </div>
     `;
 
-    const confirm = document.getElementById('omdConfirm');
-    const next = document.getElementById('omdNext');
-    confirm.addEventListener('change', () => { next.disabled = !confirm.checked; });
+    const { next } = bindSlideControls({ confirmId: 'omdConfirm', nextId: 'omdNext', checkKey });
     document.getElementById('omdBack').addEventListener('click', () => {
       if (index > 0) renderOmdCommon(index - 1);
       else renderDepartments();
@@ -687,7 +862,29 @@
           <div class="video-placeholder">
             <div class="vp-icon">▶</div>
             <div class="vp-title">Видеоинструкция будет добавлена позже</div>
-            <div class="vp-sub">Здесь будет ролик: назначение оборудования, опасные зоны, безопасный запуск, запреты и аварийные действия.</div>
+            <div class="vp-sub">Перед карточками быстро отметьте, что нужно увидеть в ролике: назначение, опасные зоны, СИЗ, запреты и аварийные действия.</div>
+            <div class="video-preflight-grid">
+              <article>
+                <span class="badge badge-red">Высокий риск</span>
+                <strong>Опасные зоны</strong>
+                <p>Где возможны захват, защемление, вылет образца или воздействие усилия.</p>
+              </article>
+              <article>
+                <span class="badge badge-green">СИЗ</span>
+                <strong>До подхода к установке</strong>
+                <p>Очки, спецодежда, перчатки и другие СИЗ должны быть исправны.</p>
+              </article>
+              <article>
+                <span class="badge badge-orange">Важно</span>
+                <strong>Пуск и контроль</strong>
+                <p>Кто у пульта, как подается сигнал и где должна быть безопасная позиция.</p>
+              </article>
+              <article>
+                <span class="badge badge-blue">Стоп-сигнал</span>
+                <strong>Нештатная ситуация</strong>
+                <p>Вибрация, шум, повреждение, застревание или травма требуют остановки.</p>
+              </article>
+            </div>
             <button class="vp-play-btn" id="equipmentCardsBtn" type="button">Перейти к инструктажу</button>
             <div class="vp-note">Поле videoSrc уже предусмотрено в данных.</div>
           </div>
@@ -714,6 +911,7 @@
     const slide = slides[index];
     const total = slides.length + 2;
     const stepNumber = index + 2;
+    const checkKey = `equipment:${id}:${index}`;
     state.equipmentSlide = index;
 
     setBreadcrumb([
@@ -737,11 +935,13 @@
             <div class="slide-block-num">${index + 1}</div>
             <div class="slide-block-title">${esc(slide.title)}</div>
           </div>
+          ${renderSlideSummary(slide)}
           <div class="slide-cards-grid">${slide.cards.map(renderSafetyCard).join('')}</div>
+          ${renderKnowledgeCheck(slide, checkKey)}
           <div class="slide-footer">
             <label class="confirm-row">
               <input type="checkbox" class="confirm-check" id="equipmentConfirm" />
-              <span class="confirm-label">Ознакомлен с разделом</span>
+              <span class="confirm-label">Понял правила раздела</span>
             </label>
           </div>
         </div>
@@ -755,9 +955,7 @@
       </div>
     `;
 
-    const confirm = document.getElementById('equipmentConfirm');
-    const next = document.getElementById('slideNext');
-    confirm.addEventListener('change', () => { next.disabled = !confirm.checked; });
+    const { next } = bindSlideControls({ confirmId: 'equipmentConfirm', nextId: 'slideNext', checkKey });
     document.getElementById('slideBack').addEventListener('click', () => {
       if (index > 0) renderEquipmentSlide(id, index - 1);
       else renderEquipmentVideo(id);
