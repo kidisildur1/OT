@@ -1147,3 +1147,55 @@ button { cursor: pointer; }
     padding-inline: 12px;
   }
 }
+
+.training-video-body {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+.training-video-frame {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid rgba(120, 168, 255, .18);
+  background: #05080c;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .26);
+}
+
+.training-video-frame video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.training-video-meta {
+  min-width: 0;
+}
+
+.training-video-meta > p {
+  margin: 10px 0 0;
+  color: var(--text-2);
+  font-size: .86rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.training-video-meta .vp-play-btn {
+  margin-top: 4px;
+}
+
+@media (max-width: 430px) {
+  .training-video-body {
+    padding: 12px;
+  }
+
+  .training-video-frame {
+    border-radius: 18px;
+  }
+}

@@ -4,6 +4,7 @@
   const TRAINING_VALIDITY_MONTHS = 3;
   const GUEST_VALIDITY_DAYS = 1;
   const STORAGE_KEY = 'ot_training_records_v1';
+  const DEPARTMENT_LABEL = 'Отдел бесшовных труб';
 
   const state = {
     mode: 'home',
@@ -73,6 +74,44 @@
 
   function getEquipmentById(id) {
     return window.OMD_EQUIPMENT.find((item) => item.id === id);
+  }
+
+  function getEquipmentVideo(equipment) {
+    if (!equipment) return null;
+    const video = equipment.video || {};
+    const src = video.src || equipment.videoSrc || '';
+    if (!src) return null;
+    return {
+      title: video.title || `${equipment.name}: принцип работы установки`,
+      description: video.description || equipment.description || 'Перед инструктажем посмотрите принцип работы и основные опасные зоны установки.',
+      duration: video.duration || '',
+      src,
+      poster: video.poster || '',
+      keyPoints: Array.isArray(video.keyPoints) ? video.keyPoints : []
+    };
+  }
+
+  function hasEquipmentVideo(equipment) {
+    return Boolean(getEquipmentVideo(equipment));
+  }
+
+  function getEquipmentStepTotal(equipment) {
+    const slideCount = equipment?.slides?.length || 0;
+    const testCount = equipment?.test?.length ? 1 : 0;
+    const videoCount = hasEquipmentVideo(equipment) ? 1 : 0;
+    return slideCount + testCount + videoCount;
+  }
+
+  function getEquipmentSlideStep(equipment, index) {
+    return index + 1 + (hasEquipmentVideo(equipment) ? 1 : 0);
+  }
+
+  function renderEquipmentEntry(id) {
+    const equipment = getEquipmentById(id);
+    state.selectedEquipmentId = id;
+    state.equipmentSlide = 0;
+    if (hasEquipmentVideo(equipment)) renderEquipmentVideo(id);
+    else renderEquipmentSlide(id, 0);
   }
 
   function getTrainingRecords() {
@@ -444,7 +483,7 @@
           </div>
           <div class="form-group">
             <label class="form-label" for="employeePosition">Должность / подразделение</label>
-            <input class="form-input" id="employeePosition" type="text" placeholder="Например: инженер, участок ЭИП ОМД" value="${esc(state.employee.position)}" />
+            <input class="form-input" id="employeePosition" type="text" placeholder="Например: инженер, отдел бесшовных труб" value="${esc(state.employee.position)}" />
           </div>
         </div>
 
@@ -693,7 +732,7 @@
         <div class="page-head">
           <div class="page-head-eyebrow">Сотрудник: ${esc(state.employee.fullName || 'не указан')}</div>
           <div class="page-head-title">Выберите подразделение</div>
-          <div class="page-head-sub">Пока подробно прорабатываем участок ЭИП ОМД. Остальные направления уже заложены в структуру.</div>
+          <div class="page-head-sub">Пока подробно прорабатываем отдел бесшовных труб. Остальные направления уже заложены в структуру.</div>
         </div>
         <div class="list-stack">${items}</div>
         <div class="page-bottom-spacer"></div>
@@ -722,9 +761,9 @@
         <div class="page-head">
           <div class="page-head-eyebrow">Раздел в структуре</div>
           <div class="page-head-title">${esc(dept.name)}</div>
-          <div class="page-head-sub">Этот раздел будет наполнен после отработки эталонного сценария на участке ЭИП ОМД.</div>
+          <div class="page-head-sub">Этот раздел будет наполнен после отработки эталонного сценария отдела бесшовных труб.</div>
         </div>
-        <div class="info-box">Сначала доводим до качества ОМД: общий модуль → установки → видео → тест. Потом масштабируем на остальные направления.</div>
+        <div class="info-box">Сначала доводим до качества пилотный маршрут: общий модуль → установки → видео или слайды → тест. Потом масштабируем на остальные направления.</div>
       </div>
     `;
     scrollTop();
@@ -741,14 +780,14 @@
     setBreadcrumb([
       { label: 'Главная', onClick: renderHome },
       { label: 'Подразделения', onClick: renderDepartments },
-      { label: 'ЭИП ОМД' },
+      { label: DEPARTMENT_LABEL },
       { label: `Раздел ${index + 1}` }
     ]);
 
     app.innerHTML = `
       <div class="page">
         <div class="page-head">
-          <div class="page-head-eyebrow">Общий модуль участка · ${esc(state.employee.fullName || 'сотрудник')}</div>
+          <div class="page-head-eyebrow">${esc(DEPARTMENT_LABEL)} · ${esc(state.employee.fullName || 'сотрудник')}</div>
           <div class="page-head-title">${esc(slide.title)}</div>
           <div class="page-head-sub">${esc(module.subtitle)}</div>
         </div>
@@ -794,7 +833,7 @@
     setBreadcrumb([
       { label: 'Главная', onClick: renderHome },
       { label: 'Подразделения', onClick: renderDepartments },
-      { label: 'ЭИП ОМД', onClick: () => renderOmdCommon(0) },
+      { label: DEPARTMENT_LABEL, onClick: () => renderOmdCommon(0) },
       { label: 'Установки' }
     ]);
 
@@ -807,7 +846,7 @@
             <div class="list-card-sub">${esc(equipment.description)}</div>
             <div class="list-card-meta">
               <span class="badge badge-blue">${esc(equipment.instruction)}</span>
-              <span class="badge badge-gray">видео позже</span>
+              <span class="badge badge-gray">${equipment.videoSrc ? esc(equipment.video?.duration || 'видео') : 'слайды + тест'}</span>
               <span class="badge badge-green">срок 3 месяца</span>
             </div>
           </div>
@@ -818,9 +857,9 @@
     app.innerHTML = `
       <div class="page">
         <div class="page-head">
-          <div class="page-head-eyebrow">Участок ЭИП ОМД · ${esc(state.employee.fullName || 'сотрудник')}</div>
+          <div class="page-head-eyebrow">Отдел бесшовных труб · ${esc(state.employee.fullName || 'сотрудник')}</div>
           <div class="page-head-title">Выберите установку</div>
-          <div class="page-head-sub">Каждый модуль установки начнётся с вводного видео. После прохождения обучение действует 3 месяца.</div>
+          <div class="page-head-sub">После выбора установки откроются нюансы ИОТ, а для ЭУ-ПППТ сначала будет показано видео принципа работы.</div>
         </div>
         <div class="list-stack">${items}</div>
         <div class="page-bottom-spacer"></div>
@@ -828,20 +867,29 @@
     `;
 
     app.querySelectorAll('[data-equipment]').forEach((btn) => {
-      btn.addEventListener('click', () => renderEquipmentVideo(btn.dataset.equipment));
+      btn.addEventListener('click', () => renderEquipmentEntry(btn.dataset.equipment));
     });
     scrollTop();
   }
 
   function renderEquipmentVideo(id) {
     const equipment = getEquipmentById(id);
+    const video = getEquipmentVideo(equipment);
     state.selectedEquipmentId = id;
     state.equipmentSlide = 0;
-    const total = (equipment.slides?.length || 0) + 2;
+
+    if (!video) {
+      renderEquipmentSlide(id, 0);
+      return;
+    }
+
+    const total = getEquipmentStepTotal(equipment);
+    const posterAttr = video.poster ? ` poster="${esc(video.poster)}"` : '';
+    const keyPoints = video.keyPoints.length ? video.keyPoints : ['Назначение установки', 'Опасные зоны', 'Пульт управления', 'Безопасная позиция'];
 
     setBreadcrumb([
       { label: 'Главная', onClick: renderHome },
-      { label: 'ЭИП ОМД', onClick: () => renderOmdCommon(0) },
+      { label: DEPARTMENT_LABEL, onClick: () => renderOmdCommon(0) },
       { label: 'Установки', onClick: renderEquipmentList },
       { label: equipment.name }
     ]);
@@ -850,43 +898,36 @@
       <div class="page">
         <div class="page-head">
           <div class="page-head-eyebrow">${esc(equipment.instruction)}</div>
-          <div class="page-head-title">${esc(equipment.name)}</div>
-          <div class="page-head-sub">${esc(equipment.description)}</div>
+          <div class="page-head-title">${esc(video.title)}</div>
+          <div class="page-head-sub">${esc(video.description)}</div>
         </div>
         ${renderStepper({ current: 1, total, label: `Шаг 1 из ${total} — видео по установке` })}
-        <div class="slide-block">
+        <div class="slide-block training-video-block">
           <div class="slide-block-head">
             <div class="slide-block-num">▶</div>
-            <div class="slide-block-title">Вводное видео по установке</div>
+            <div class="slide-block-title">Принцип работы установки</div>
           </div>
-          <div class="video-placeholder">
-            <div class="vp-icon">▶</div>
-            <div class="vp-title">Видеоинструкция будет добавлена позже</div>
-            <div class="vp-sub">Перед карточками быстро отметьте, что нужно увидеть в ролике: назначение, опасные зоны, СИЗ, запреты и аварийные действия.</div>
-            <div class="video-preflight-grid">
-              <article>
-                <span class="badge badge-red">Высокий риск</span>
-                <strong>Опасные зоны</strong>
-                <p>Где возможны захват, защемление, вылет образца или воздействие усилия.</p>
-              </article>
-              <article>
-                <span class="badge badge-green">СИЗ</span>
-                <strong>До подхода к установке</strong>
-                <p>Очки, спецодежда, перчатки и другие СИЗ должны быть исправны.</p>
-              </article>
-              <article>
-                <span class="badge badge-orange">Важно</span>
-                <strong>Пуск и контроль</strong>
-                <p>Кто у пульта, как подается сигнал и где должна быть безопасная позиция.</p>
-              </article>
-              <article>
-                <span class="badge badge-blue">Стоп-сигнал</span>
-                <strong>Нештатная ситуация</strong>
-                <p>Вибрация, шум, повреждение, застревание или травма требуют остановки.</p>
-              </article>
+          <div class="training-video-body">
+            <div class="training-video-frame">
+              <video controls playsinline preload="metadata"${posterAttr}>
+                <source src="${esc(video.src)}" type="video/mp4" />
+                Ваш браузер не поддерживает видео.
+              </video>
             </div>
-            <button class="vp-play-btn" id="equipmentCardsBtn" type="button">Перейти к инструктажу</button>
-            <div class="vp-note">Поле videoSrc уже предусмотрено в данных.</div>
+            <div class="training-video-meta">
+              <span class="badge badge-blue">Видео ${esc(video.duration || 'по установке')}</span>
+              <p>${esc(video.description)}</p>
+              <div class="video-preflight-grid">
+                ${keyPoints.map((point) => `
+                  <article>
+                    <span class="badge badge-gray">Ключевой блок</span>
+                    <strong>${esc(point)}</strong>
+                    <p>Отметьте этот элемент в ролике перед переходом к правилам.</p>
+                  </article>
+                `).join('')}
+              </div>
+              <button class="vp-play-btn" id="equipmentCardsBtn" type="button">Далее к правилам</button>
+            </div>
           </div>
         </div>
         <div class="page-bottom-spacer"></div>
@@ -894,7 +935,7 @@
       <div class="sticky-bottom no-print">
         <div class="sticky-bottom-inner">
           <button class="btn btn-secondary" id="equipmentBack" type="button">← Установки</button>
-          <button class="btn btn-primary btn-grow" id="equipmentNext" type="button">К инструктажу →</button>
+          <button class="btn btn-primary btn-grow" id="equipmentNext" type="button">Далее к правилам →</button>
         </div>
       </div>
     `;
@@ -909,16 +950,17 @@
     const equipment = getEquipmentById(id);
     const slides = equipment.slides || [];
     const slide = slides[index];
-    const total = slides.length + 2;
-    const stepNumber = index + 2;
+    const total = getEquipmentStepTotal(equipment);
+    const stepNumber = getEquipmentSlideStep(equipment, index);
     const checkKey = `equipment:${id}:${index}`;
+    state.selectedEquipmentId = id;
     state.equipmentSlide = index;
 
     setBreadcrumb([
       { label: 'Главная', onClick: renderHome },
-      { label: 'ЭИП ОМД', onClick: () => renderOmdCommon(0) },
+      { label: DEPARTMENT_LABEL, onClick: () => renderOmdCommon(0) },
       { label: 'Установки', onClick: renderEquipmentList },
-      { label: equipment.name, onClick: () => renderEquipmentVideo(id) },
+      { label: equipment.name, onClick: () => renderEquipmentEntry(id) },
       { label: `Раздел ${index + 1}` }
     ]);
 
@@ -950,7 +992,7 @@
       <div class="sticky-bottom no-print">
         <div class="sticky-bottom-inner">
           <button class="btn btn-secondary" id="slideBack" type="button">← Назад</button>
-          <button class="btn btn-primary btn-grow" id="slideNext" type="button" disabled>${index < slides.length - 1 ? 'Следующий раздел →' : 'К завершению →'}</button>
+          <button class="btn btn-primary btn-grow" id="slideNext" type="button" disabled>${index < slides.length - 1 ? 'Следующий раздел →' : equipment.test?.length ? 'К тесту →' : 'К завершению →'}</button>
         </div>
       </div>
     `;
@@ -958,13 +1000,143 @@
     const { next } = bindSlideControls({ confirmId: 'equipmentConfirm', nextId: 'slideNext', checkKey });
     document.getElementById('slideBack').addEventListener('click', () => {
       if (index > 0) renderEquipmentSlide(id, index - 1);
-      else renderEquipmentVideo(id);
+      else if (hasEquipmentVideo(equipment)) renderEquipmentVideo(id);
+      else renderEquipmentList();
     });
     next.addEventListener('click', () => {
       if (index < slides.length - 1) renderEquipmentSlide(id, index + 1);
+      else if (equipment.test?.length) renderEquipmentTest(id);
       else renderDone();
     });
     scrollTop();
+  }
+
+  function renderEquipmentTest(id) {
+    const equipment = getEquipmentById(id);
+    const questions = equipment.test || [];
+    if (!questions.length) {
+      renderDone();
+      return;
+    }
+
+    const total = getEquipmentStepTotal(equipment);
+    const answeredCount = questions.filter((_, index) => state.knowledgeAnswers[`test:${id}:${index}`] !== undefined).length;
+    const correctCount = questions.filter((question, index) => state.knowledgeAnswers[`test:${id}:${index}`] === question.answer).length;
+    const score = questions.length ? Math.round((correctCount / questions.length) * 100) : 100;
+    const passScore = equipment.passScore || 80;
+
+    setBreadcrumb([
+      { label: 'Главная', onClick: renderHome },
+      { label: DEPARTMENT_LABEL, onClick: () => renderOmdCommon(0) },
+      { label: 'Установки', onClick: renderEquipmentList },
+      { label: equipment.name, onClick: () => renderEquipmentEntry(id) },
+      { label: 'Тест' }
+    ]);
+
+    app.innerHTML = `
+      <div class="page">
+        <div class="page-head">
+          <div class="page-head-eyebrow">Проверка знаний · ${esc(equipment.instruction)}</div>
+          <div class="page-head-title">Итоговый тест по установке</div>
+          <div class="page-head-sub">Ответьте на вопросы по общим требованиям и нюансам ${esc(equipment.name)}.</div>
+        </div>
+        ${renderStepper({ current: total, total, label: `Шаг ${total} из ${total} — тест` })}
+        <div class="slide-block">
+          <div class="slide-block-head">
+            <div class="slide-block-num">?</div>
+            <div class="slide-block-title">Проверка перед завершением</div>
+          </div>
+          <div class="test-summary-row">
+            <span class="badge badge-blue">Вопросы: ${questions.length}</span>
+            <span class="badge badge-green">Порог: ${passScore}%</span>
+            <span class="badge badge-gray" id="testScore">Отвечено: ${answeredCount}/${questions.length}</span>
+          </div>
+          <div class="test-question-list">
+            ${questions.map((question, index) => {
+              const key = `test:${id}:${index}`;
+              const selected = state.knowledgeAnswers[key];
+              const correctText = question.options[question.answer] || '';
+              const answered = selected !== undefined;
+              return `
+                <section class="knowledge-check ${answered ? 'answered' : ''}" data-test-key="${esc(key)}" data-answer="${question.answer}" data-feedback="${esc(question.feedback)}" data-correct-text="${esc(correctText)}">
+                  <div class="knowledge-check-head">
+                    <span class="badge badge-blue">${index + 1}</span>
+                    <strong>${esc(question.question)}</strong>
+                  </div>
+                  <div class="knowledge-options">
+                    ${question.options.map((option, optionIndex) => `
+                      <button class="knowledge-option ${selected === optionIndex ? 'selected' : ''} ${answered && optionIndex === question.answer ? 'right' : ''} ${selected === optionIndex && optionIndex !== question.answer ? 'wrong' : ''}" type="button" data-test-value="${optionIndex}">
+                        ${esc(option)}
+                      </button>
+                    `).join('')}
+                  </div>
+                  <p class="knowledge-feedback" data-check-feedback ${answered ? '' : 'hidden'}>
+                    ${answered ? esc(selected === question.answer ? question.feedback : `Верный акцент: ${correctText}. ${question.feedback}`) : ''}
+                  </p>
+                </section>
+              `;
+            }).join('')}
+          </div>
+        </div>
+        <div class="page-bottom-spacer"></div>
+      </div>
+      <div class="sticky-bottom no-print">
+        <div class="sticky-bottom-inner">
+          <button class="btn btn-secondary" id="testBack" type="button">← Назад</button>
+          <button class="btn btn-primary btn-grow" id="testNext" type="button" disabled>Завершить инструктаж →</button>
+        </div>
+      </div>
+    `;
+
+    bindEquipmentTest(id);
+    document.getElementById('testBack').addEventListener('click', () => renderEquipmentSlide(id, (equipment.slides || []).length - 1));
+    document.getElementById('testNext').addEventListener('click', () => renderDone());
+    scrollTop();
+  }
+
+  function bindEquipmentTest(id) {
+    const equipment = getEquipmentById(id);
+    const questions = equipment.test || [];
+    const next = document.getElementById('testNext');
+    const scoreNode = document.getElementById('testScore');
+
+    const sync = () => {
+      const answeredCount = questions.filter((_, index) => state.knowledgeAnswers[`test:${id}:${index}`] !== undefined).length;
+      const correctCount = questions.filter((question, index) => state.knowledgeAnswers[`test:${id}:${index}`] === question.answer).length;
+      const score = questions.length ? Math.round((correctCount / questions.length) * 100) : 100;
+      next.disabled = answeredCount < questions.length;
+      scoreNode.textContent = answeredCount === questions.length ? `Результат: ${score}%` : `Отвечено: ${answeredCount}/${questions.length}`;
+      scoreNode.className = `badge ${answeredCount === questions.length && score >= (equipment.passScore || 80) ? 'badge-green' : 'badge-gray'}`;
+    };
+
+    app.querySelectorAll('[data-test-key]').forEach((section) => {
+      const key = section.dataset.testKey;
+      const answer = Number(section.dataset.answer);
+      const feedback = section.dataset.feedback || '';
+      const correctText = section.dataset.correctText || '';
+      const feedbackNode = section.querySelector('[data-check-feedback]');
+
+      section.querySelectorAll('[data-test-value]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const value = Number(button.dataset.testValue);
+          state.knowledgeAnswers[key] = value;
+          section.classList.add('answered');
+
+          section.querySelectorAll('[data-test-value]').forEach((item) => {
+            const itemValue = Number(item.dataset.testValue);
+            item.classList.toggle('selected', itemValue === value);
+            item.classList.toggle('right', itemValue === answer);
+            item.classList.toggle('wrong', itemValue === value && value !== answer);
+          });
+
+          feedbackNode.hidden = false;
+          feedbackNode.textContent = value === answer ? feedback : `Верный акцент: ${correctText}. ${feedback}`;
+          sync();
+        });
+      });
+    });
+
+    sync();
   }
 
   function renderDone(options = {}) {
@@ -983,7 +1155,7 @@
       validityMonths: isGuest ? 0 : TRAINING_VALIDITY_MONTHS,
       validityLabel: isGuest ? 'на срок посещения' : `${TRAINING_VALIDITY_MONTHS} месяца`,
       moduleType: isGuest ? 'guest' : 'equipment',
-      department: isGuest ? 'Командированные и посетители' : 'Участок ЭИП ОМД',
+      department: isGuest ? 'Командированные и посетители' : DEPARTMENT_LABEL,
       equipmentId: isGuest ? 'guest-intro' : equipment?.id || null,
       equipmentName: isGuest ? 'Вводный инструктаж' : equipment?.name || 'Не выбрана',
       instruction: isGuest ? 'Вводный инструктаж' : equipment?.instruction || '',
@@ -1037,3 +1209,4 @@
 
   document.addEventListener('DOMContentLoaded', init);
 })();
+
